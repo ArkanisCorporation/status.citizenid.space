@@ -1,0 +1,7 @@
+{
+    "act": true,
+    "ref": "refs/heads/ci",
+    "repository": {
+        "default_branch": "main"
+    }
+}

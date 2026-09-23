@@ -1,0 +1,58 @@
+# Reusable wrapper that builds the service image without publishing it.
+name: Verify Container Image
+
+run-name: Verify template image as ${{ inputs.version }}
+
+permissions: {}
+
+on:
+  workflow_dispatch:
+    inputs:
+      runner:
+        description: "Runner pool"
+        required: false
+        type: choice
+        options:
+          - daedalus
+          - arkanis-runners
+          - ubuntu-latest
+        default: daedalus
+      version:
+        description: "Version used for image verification"
+        required: true
+        type: string
+  workflow_call:
+    inputs:
+      runner:
+        description: "Runner pool"
+        required: false
+        type: string
+        default: daedalus
+      version:
+        description: "Version used for image verification"
+        required: true
+        type: string
+
+jobs:
+  verify:
+    name: Template ${{ inputs.version }}
+    uses: ArkanisCorporation/ci/.github/workflows/wf-verify-publish-container-dotnet.yml@v1
+    permissions:
+      contents: read
+    with:
+      runs-on: ${{ inputs.runner }}
+      runs-on-self-hosted: ${{ inputs.runner != 'ubuntu-latest' }}
+      image: ghcr.io/arkaniscorporation/template
+      context: .
+      dockerfile: src/Template.Service/Dockerfile
+      version: ${{ inputs.version }}
+      build-args: |
+        BUILD_CONFIGURATION=Release
+        OCI_IMAGE_REVISION=${{ github.sha }}
+        OCI_IMAGE_SOURCE=https://github.com/${{ github.repository }}
+        OCI_IMAGE_VERSION=${{ inputs.version }}
+      labels: |
+        org.opencontainers.image.revision=${{ github.sha }}
+        org.opencontainers.image.source=https://github.com/${{ github.repository }}
+        org.opencontainers.image.version=${{ inputs.version }}
+      global-json-file: global.json

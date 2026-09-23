@@ -1,0 +1,51 @@
+# Reusable wrapper that packs the contracts package without publishing it.
+name: Verify NuGet Package
+
+run-name: Verify Template.Contracts ${{ inputs.version }}
+
+permissions: {}
+
+on:
+  workflow_dispatch:
+    inputs:
+      runner:
+        description: "Runner pool"
+        required: false
+        type: choice
+        options:
+          - daedalus
+          - arkanis-runners
+          - ubuntu-latest
+        default: daedalus
+      version:
+        description: "Version used for package verification"
+        required: true
+        type: string
+  workflow_call:
+    inputs:
+      runner:
+        description: "Runner pool"
+        required: false
+        type: string
+        default: daedalus
+      version:
+        description: "Version used for package verification"
+        required: true
+        type: string
+
+jobs:
+  verify:
+    name: Template.Contracts ${{ inputs.version }}
+    uses: ArkanisCorporation/ci/.github/workflows/wf-verify-publish-nuget.yml@v1
+    permissions:
+      contents: read
+    with:
+      runs-on: ${{ inputs.runner }}
+      runs-on-self-hosted: ${{ inputs.runner != 'ubuntu-latest' }}
+      project: src/Template.Contracts/Template.Contracts.csproj
+      version: ${{ inputs.version }}
+      global-json-file: global.json
+      dotnet-setversion: false
+      include-symbols: true
+      include-source: true
+      artifact-retention-days: 7

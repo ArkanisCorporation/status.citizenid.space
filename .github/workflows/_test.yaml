@@ -1,0 +1,88 @@
+# Reusable wrapper for shared .NET test coverage, format, and local complexity checks.
+name: .NET Test
+
+permissions: {}
+
+concurrency:
+  group: "${{ inputs.concurrency_group_prefix }}-${{ github.ref }}"
+  cancel-in-progress: true
+
+on:
+  workflow_call:
+    inputs:
+      runner:
+        description: "Runner pool"
+        required: false
+        type: string
+        default: daedalus
+      test_filter:
+        description: "Optional dotnet test filter expression"
+        required: false
+        type: string
+        default: ""
+      coverage_custom_settings:
+        description: "Optional ReportGenerator customSettings, such as minimumCoverageThresholds:lineCoverage=60;minimumCoverageThresholds:branchCoverage=50"
+        required: false
+        type: string
+        default: ""
+      concurrency_group_prefix:
+        description: "Concurrency group prefix"
+        required: false
+        type: string
+        default: test
+
+jobs:
+  coverage:
+    name: Coverage
+    uses: ArkanisCorporation/ci/.github/workflows/wf-dotnet-test.yml@v1
+    permissions:
+      contents: read
+    with:
+      runs-on: ${{ inputs.runner }}
+      runs-on-self-hosted: ${{ inputs.runner != 'ubuntu-latest' }}
+      global-json-file: global.json
+      solution: Template.slnx
+      test-filter: ${{ inputs.test_filter }}
+      coverage-pr-comment: false
+      upload-coverage: true
+      coverage-report-custom-settings: ${{ inputs.coverage_custom_settings }}
+      timeout-minutes: 20
+
+  format:
+    name: Format
+    uses: ArkanisCorporation/ci/.github/workflows/wf-dotnet-format.yml@v1
+    permissions:
+      contents: read
+    with:
+      runs-on: ${{ inputs.runner }}
+      runs-on-self-hosted: ${{ inputs.runner != 'ubuntu-latest' }}
+      global-json-file: global.json
+      solution: Template.slnx
+      install-tool: true
+      timeout-minutes: 20
+
+  complexity:
+    name: Complexity
+    runs-on: ${{ inputs.runner }}
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Setup .NET
+        uses: ArkanisCorporation/ci/.github/actions/setup-dotnet@v1
+        with:
+          runs-on: ${{ inputs.runner }}
+          runs-on-self-hosted: ${{ inputs.runner != 'ubuntu-latest' }}
+          global-json-file: global.json
+          solution: Template.slnx
+
+      - name: Build with complexity analyzers
+        run: dotnet build Template.slnx --no-restore --verbosity normal -warnaserror:CA1502 -warnaserror:CA1509

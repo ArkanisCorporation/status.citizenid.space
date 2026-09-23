@@ -1,0 +1,38 @@
+<Solution>
+    <Folder Name="/config/">
+        <File Path=".editorconfig"/>
+        <File Path=".globalconfig"/>
+        <File Path=".gitattributes"/>
+        <File Path=".gitignore"/>
+        <File Path="AGENTS.md"/>
+        <File Path="CodeMetricsConfig.txt"/>
+        <File Path="Directory.Build.props"/>
+        <File Path="Directory.Build.targets"/>
+        <File Path="Directory.Packages.props"/>
+        <File Path="global.json"/>
+        <File Path="renovate.jsonc"/>
+    </Folder>
+    <Folder Name="/scripts/">
+        <File Path="scripts/act/ActRunner.cs"/>
+        <File Path="scripts/act/test-ci.cs"/>
+        <File Path="scripts/act/test-pr.cs"/>
+        <File Path="scripts/prepare-shell-scripts.cs"/>
+        <File Path="scripts/shared/Exceptions.cs"/>
+        <File Path="scripts/shared/GitRepositoryContext.cs"/>
+        <File Path="scripts/shared/GitScriptIndex.cs"/>
+        <File Path="scripts/shared/NativeCommandResult.cs"/>
+        <File Path="scripts/shared/NativeCommandRunner.cs"/>
+        <File Path="scripts/shared/NativeCommandSpec.cs"/>
+        <File Path="scripts/shared/Packages.cs"/>
+        <File Path="scripts/shared/ScriptEnvironment.cs"/>
+        <File Path="scripts/update-shell-script-permissions.cs"/>
+    </Folder>
+    <Folder Name="/src/">
+        <Project Path="src/Template.AppHost/Template.AppHost.csproj"/>
+        <Project Path="src/Template.Contracts/Template.Contracts.csproj"/>
+        <Project Path="src/Template.Service/Template.Service.csproj"/>
+    </Folder>
+    <Folder Name="/tests/">
+        <Project Path="tests/Template.Service.IntegrationTests/Template.Service.IntegrationTests.csproj"/>
+    </Folder>
+</Solution>

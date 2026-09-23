@@ -1,0 +1,29 @@
+# Keep local and repository-management state out of the image build context.
+.git
+.github
+.husky
+.act
+.agents
+.claude
+.codex
+.superpowers
+.tools
+.vs
+.idea
+
+# Exclude documentation and repository automation that cannot affect service publication.
+docs
+scripts
+AGENTS.md
+README.md
+renovate.jsonc
+Template.DotSettings
+
+# Exclude generated output and local diagnostics.
+artifacts
+**/bin
+**/obj
+**/TestResults
+**/*.user
+**/*.suo
+**/*.log

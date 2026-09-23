@@ -1,0 +1,2 @@
+# Method cyclomatic complexity threshold for the CI complexity gate.
+CA1502(Method): 15

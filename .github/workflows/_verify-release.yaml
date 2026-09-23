@@ -1,0 +1,56 @@
+# Reusable wrapper that dry-runs semantic-release and exposes the predicted release.
+name: .NET Release Verification
+
+concurrency:
+  group: "verify-release-${{ github.ref }}"
+  cancel-in-progress: true
+
+permissions: {}
+
+on:
+  workflow_dispatch:
+    inputs:
+      runner:
+        description: "Runner pool (override to ubuntu-latest if self-hosted is broken)"
+        type: choice
+        options:
+          - daedalus
+          - arkanis-runners
+          - ubuntu-latest
+        default: daedalus
+  workflow_call:
+    inputs:
+      runner:
+        description: "Runner pool"
+        required: false
+        type: string
+        default: daedalus
+    outputs:
+      new-version:
+        description: "Version semantic-release would publish"
+        value: ${{ jobs.verify.outputs.new-version }}
+      new-tag:
+        description: "Tag semantic-release would publish"
+        value: ${{ jobs.verify.outputs.new-tag }}
+      new-channel:
+        description: "Release channel semantic-release would publish"
+        value: ${{ jobs.verify.outputs.new-channel }}
+      last-version:
+        description: "Previously published version"
+        value: ${{ jobs.verify.outputs.last-version }}
+      last-tag:
+        description: "Previous version tag"
+        value: ${{ jobs.verify.outputs.last-tag }}
+      release-published:
+        description: "Whether semantic-release would publish a release"
+        value: ${{ jobs.verify.outputs.release-published }}
+
+jobs:
+  verify:
+    name: Dry Run
+    uses: ArkanisCorporation/ci/.github/workflows/wf-verify-release-semantic.yml@v1
+    permissions:
+      contents: write
+    with:
+      runs-on: ${{ inputs.runner }}
+      runs-on-self-hosted: ${{ inputs.runner != 'ubuntu-latest' }}

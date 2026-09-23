@@ -1,0 +1,12 @@
+<Project>
+    <Import Project="../Directory.Build.props"/>
+    <PropertyGroup>
+        <IsPackable>false</IsPackable>
+        <NoWarn>
+            $(NoWarn);
+            CA1707; <!-- Identifiers should not contain underscores - test methods use underscore naming convention -->
+            CA1711; <!-- Identifiers should not have incorrect suffix - Collection suffix is required for xUnit collection fixtures -->
+            CA1816; <!-- Dispose methods should call SuppressFinalize - test fixtures follow xUnit patterns -->
+        </NoWarn>
+    </PropertyGroup>
+</Project>

@@ -1,0 +1,72 @@
+# Entry workflow for shared .NET validation and release artifact dry runs.
+name: Test & Validate (.NET)
+
+permissions: {}
+
+on:
+  workflow_dispatch:
+    inputs:
+      runner:
+        description: "Runner pool (override to ubuntu-latest if self-hosted is broken)"
+        type: choice
+        options:
+          - daedalus
+          - arkanis-runners
+          - ubuntu-latest
+        default: daedalus
+
+  repository_dispatch:
+
+  push:
+    branches: [ main, release/*, ci ]
+
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  lint:
+    name: Workflow
+    uses: ArkanisCorporation/ci/.github/workflows/wf-lint-github-actions.yml@v1
+    permissions:
+      contents: read
+    with:
+      runs-on: ${{ github.event_name == 'pull_request' && 'ubuntu-latest' || inputs.runner || vars.RUNNER_DEFAULT || 'daedalus' }}
+      runs-on-self-hosted: ${{ (github.event_name == 'pull_request' && 'ubuntu-latest' || inputs.runner || vars.RUNNER_DEFAULT || 'daedalus') != 'ubuntu-latest' }}
+
+  test:
+    name: Tests
+    uses: ./.github/workflows/_test.yaml
+    permissions:
+      contents: read
+    with:
+      runner: ${{ github.event_name == 'pull_request' && 'ubuntu-latest' || inputs.runner || vars.RUNNER_DEFAULT || 'daedalus' }}
+
+  release-dry-run:
+    name: "Dry Run: Release"
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
+    needs: test
+    uses: ./.github/workflows/_verify-release.yaml
+    permissions:
+      contents: write
+    with:
+      runner: ${{ github.event_name == 'pull_request' && 'ubuntu-latest' || inputs.runner || vars.RUNNER_DEFAULT || 'daedalus' }}
+
+  container-dry-run:
+    name: "Dry Run: Container"
+    needs: test
+    uses: ./.github/workflows/_verify-container-image.yaml
+    permissions:
+      contents: read
+    with:
+      runner: ${{ github.event_name == 'pull_request' && 'ubuntu-latest' || inputs.runner || vars.RUNNER_DEFAULT || 'daedalus' }}
+      version: 0.0.0-ci.${{ github.run_number }}.${{ github.run_attempt }}
+
+  nuget-dry-run:
+    name: "Dry Run: NuGet"
+    needs: test
+    uses: ./.github/workflows/_verify-nuget-package.yaml
+    permissions:
+      contents: read
+    with:
+      runner: ${{ github.event_name == 'pull_request' && 'ubuntu-latest' || inputs.runner || vars.RUNNER_DEFAULT || 'daedalus' }}
+      version: 0.0.0-ci.${{ github.run_number }}.${{ github.run_attempt }}

@@ -1,0 +1,28 @@
+{
+    "$schema": "https://www.schemastore.org/dotnet-tools.json",
+    "version": 1,
+    "isRoot": true,
+    "tools": {
+        "husky": {
+            "version": "0.9.1",
+            "commands": [
+                "husky"
+            ],
+            "rollForward": false
+        },
+        "dotnet-setversion": {
+            "version": "4.0.0",
+            "commands": [
+                "setversion"
+            ],
+            "rollForward": false
+        },
+        "aspire.cli": {
+            "version": "13.4.6",
+            "commands": [
+                "aspire"
+            ],
+            "rollForward": false
+        }
+    }
+}

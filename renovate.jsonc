@@ -1,0 +1,12 @@
+{
+    "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+    "extends": [
+         "github>ArkanisCorporation/renovate-config"
+        //? The default configuration allows automerge; however, private repo rules are not enforced
+        // "github>ArkanisCorporation/renovate-config:conservative"
+    ],
+    "reviewers": [
+        //? Automatically assign reviewers to renovate PRs
+        // "team:your-team-here"
+    ]
+}

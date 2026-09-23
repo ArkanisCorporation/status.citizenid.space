@@ -1,0 +1,17 @@
+<Project Sdk="Aspire.AppHost.Sdk/13.4.6">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <RestorePackagesWithLockFile>false</RestorePackagesWithLockFile>
+    <RestoreLockedMode>false</RestoreLockedMode>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Arkanis.Common.Hosting"/>
+    <PackageReference Include="Aspire.Hosting.AppHost"/>
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Template.Service\Template.Service.csproj"/>
+  </ItemGroup>
+</Project>
