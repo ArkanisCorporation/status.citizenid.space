@@ -111,7 +111,8 @@ The probes use the documented application endpoint rather than an arbitrary TCP-
 
 Each Deployment has a `PodDisruptionBudget` with `minAvailable: 1`.
 Aspire's Kubernetes object model does not currently model a PodDisruptionBudget directly.
-The AppHost uses the generic Kubernetes manifest escape hatch, `KubernetesResource.AddManifest(...)` and `WithField(...)`, to emit a `policy/v1` PDB in the generated Helm chart.
+The AppHost adds a typed `policy/v1` PDB derived from `BaseKubernetesResource` to the Kener `KubernetesResource.AdditionalResources` collection.
+This is the verified C# object-model mechanism for a chart-owned custom Kubernetes resource in the selected Aspire Kubernetes package.
 The PDB selector matches the Deployment's explicit `app.kubernetes.io/component: kener` pod-template label.
 This keeps the PDB versioned and chart-owned rather than maintained as an unmanaged sibling manifest.
 It protects against voluntary disruptions only and does not guarantee availability during an application failure or rolling-update capacity loss.

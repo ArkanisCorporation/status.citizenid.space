@@ -1,17 +1,23 @@
-<Project Sdk="Aspire.AppHost.Sdk/13.4.6">
-  <PropertyGroup>
-    <OutputType>Exe</OutputType>
-    <TargetFramework>net10.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-    <RestorePackagesWithLockFile>false</RestorePackagesWithLockFile>
-    <RestoreLockedMode>false</RestoreLockedMode>
-  </PropertyGroup>
-  <ItemGroup>
-    <PackageReference Include="Arkanis.Common.Hosting"/>
-    <PackageReference Include="Aspire.Hosting.AppHost"/>
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\Template.Service\Template.Service.csproj"/>
-  </ItemGroup>
+<Project Sdk="Aspire.AppHost.Sdk/13.5.4">
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <TargetFramework>net10.0</TargetFramework>
+        <AspireUseCliBundle>true</AspireUseCliBundle>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+        <RestorePackagesWithLockFile>false</RestorePackagesWithLockFile>
+        <RestoreLockedMode>false</RestoreLockedMode>
+    </PropertyGroup>
+    <ItemGroup>
+        <PackageReference Include="Arkanis.Aspire.Hosting.Extensions.1Password" />
+        <PackageReference Include="Arkanis.Aspire.Hosting.Extensions.Kubernetes" />
+        <PackageReference Include="Arkanis.Aspire.Hosting.Extensions.Kubernetes.CloudNativePostgres" />
+        <PackageReference Include="Arkanis.Aspire.Hosting.Extensions.Kubernetes.ExternalSecrets" />
+        <PackageReference Include="Arkanis.Common.Aspire.ServiceDefaults" />
+        <PackageReference Include="Arkanis.Common.Hosting" />
+        <PackageReference Include="Aspire.Hosting.AppHost" />
+        <PackageReference Include="Aspire.Hosting.Kubernetes" />
+        <PackageReference Include="Aspire.Hosting.PostgreSQL" />
+        <PackageReference Include="Aspire.Hosting.Redis" />
+    </ItemGroup>
 </Project>

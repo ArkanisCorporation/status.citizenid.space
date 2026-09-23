@@ -33,6 +33,7 @@
         <Project Path="src/Template.Service/Template.Service.csproj"/>
     </Folder>
     <Folder Name="/tests/">
+        <Project Path="tests/Template.AppHost.PublishTests/Template.AppHost.PublishTests.csproj"/>
         <Project Path="tests/Template.Service.IntegrationTests/Template.Service.IntegrationTests.csproj"/>
     </Folder>
 </Solution>

@@ -5,10 +5,17 @@
     <CentralPackageTransitivePinningEnabled>true</CentralPackageTransitivePinningEnabled>
   </PropertyGroup>
   <ItemGroup>
+    <PackageVersion Include="Arkanis.Aspire.Hosting.Extensions.1Password" Version="2.1.0-dev.1"/>
+    <PackageVersion Include="Arkanis.Aspire.Hosting.Extensions.Kubernetes" Version="1.0.0-dev.20"/>
+    <PackageVersion Include="Arkanis.Aspire.Hosting.Extensions.Kubernetes.CloudNativePostgres" Version="1.0.0-dev.20"/>
+    <PackageVersion Include="Arkanis.Aspire.Hosting.Extensions.Kubernetes.ExternalSecrets" Version="1.0.0-dev.20"/>
     <PackageVersion Include="Arkanis.Common.Aspire.ServiceDefaults" Version="1.0.0-dev.1"/>
     <PackageVersion Include="Arkanis.Common.Hosting" Version="1.0.0-dev.1"/>
     <PackageVersion Include="Arkanis.Common.Observability.Serilog" Version="1.0.0-dev.1"/>
-    <PackageVersion Include="Aspire.Hosting.AppHost" Version="13.4.6"/>
+    <PackageVersion Include="Aspire.Hosting.AppHost" Version="13.5.4"/>
+    <PackageVersion Include="Aspire.Hosting.Kubernetes" Version="13.5.4-preview.1.26464.4"/>
+    <PackageVersion Include="Aspire.Hosting.PostgreSQL" Version="13.5.4"/>
+    <PackageVersion Include="Aspire.Hosting.Redis" Version="13.5.4"/>
     <PackageVersion Include="coverlet.collector" Version="10.0.1"/>
     <PackageVersion Include="Microsoft.AspNetCore.Mvc.Testing" Version="10.0.10"/>
     <PackageVersion Include="Microsoft.AspNetCore.OpenApi" Version="10.0.10"/>

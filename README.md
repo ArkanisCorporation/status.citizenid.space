@@ -87,6 +87,21 @@ dotnet aspire stop --apphost src/Template.AppHost/Template.AppHost.csproj --non-
 Always stop the AppHost when the local session is complete.
 Use `dotnet aspire ps --format Json --non-interactive` to confirm that no AppHost remains running.
 
+## Publish Kener Kubernetes Charts
+
+The AppHost publishes one environment-isolated Kener chart per command.
+`Kubernetes-Production` targets `citizenid-status-production` and `https://status.citizenid.space`.
+`Kubernetes-Staging` targets `citizenid-status-staging` and `https://status.citizenid.dev`.
+
+```powershell
+dotnet aspire publish --apphost src/Template.AppHost/Template.AppHost.csproj --environment Kubernetes-Production --output-path artifacts/kener-production --non-interactive
+dotnet aspire publish --apphost src/Template.AppHost/Template.AppHost.csproj --environment Kubernetes-Staging --output-path artifacts/kener-staging --non-interactive
+```
+
+Each command only generates a Helm chart.
+It does not create 1Password items, resolve secret values for output, apply Helm resources, or alter the Kubernetes cluster.
+The chart expects the existing `onepassword-connect` and `postgres-production-credentials` ClusterSecretStores at deployment time.
+
 ## Build The Container Locally
 
 Build the service image from the repository-root context.
