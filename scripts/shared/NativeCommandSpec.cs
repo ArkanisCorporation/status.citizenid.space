@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using CliWrap;
 
-namespace Template.Scripting;
+namespace Arkanis.Infra.Deployment.CitizenId.Status.Scripting;
 
 /// <summary>
 /// Describes a native command invocation executed through <see cref="NativeCommandRunner" />.

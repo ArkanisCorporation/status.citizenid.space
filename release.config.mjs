@@ -3,10 +3,7 @@
  */
 export default {
     branches: [
-        {
-            name: "+([0-9])?(.{+([0-9]),x}).x",
-            channel: "stable"
-        },
+        "release/+([0-9])?(.{+([0-9]),x}).x",
         {
             name: "release/stable",
             channel: "stable"
@@ -17,12 +14,12 @@ export default {
             prerelease: "dev"
         },
         {
-            name: ".+",
+            name: "ci",
             channel: "ci",
             prerelease: "ci-do-not-use"
         },
     ],
-    repositoryUrl: "https://github.com/ArkanisCorporation/Template.NET",
+    repositoryUrl: "https://github.com/ArkanisCorporation/status.citizenid.space",
     tagFormat: "v${version}",
     debug: false,
     plugins: [

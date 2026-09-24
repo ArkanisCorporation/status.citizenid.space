@@ -1,4 +1,4 @@
-namespace Template.Scripting;
+namespace Arkanis.Infra.Deployment.CitizenId.Status.Scripting;
 
 /// <summary>
 /// Represents a failure that a file-based repository automation script can report to its caller.
@@ -10,7 +10,11 @@ namespace Template.Scripting;
 /// <param name="message">Human-readable failure message with operation context and remediation when available.</param>
 /// <param name="exitCode">Process exit code returned by the script entry point.</param>
 /// <param name="innerException">Original exception that caused the script failure, if any.</param>
-public abstract class ScriptException(string message, int exitCode = 2, Exception? innerException = null) : Exception(message, innerException)
+public abstract class ScriptException(
+    string message,
+    int exitCode = 2,
+    Exception? innerException = null
+) : Exception(message, innerException)
 {
     /// <summary>
     /// Gets the process exit code that the script entry point should return.
@@ -29,7 +33,8 @@ public abstract class ScriptException(string message, int exitCode = 2, Exceptio
 /// </remarks>
 /// <param name="message">Human-readable failure message with the missing or invalid configuration value.</param>
 /// <param name="innerException">Original exception that caused the configuration failure, if any.</param>
-public sealed class ScriptConfigurationException(string message, Exception? innerException = null) : ScriptException(message, innerException: innerException);
+public sealed class ScriptConfigurationException(string message, Exception? innerException = null)
+    : ScriptException(message, innerException: innerException);
 
 /// <summary>
 /// Represents a native command that could not be started or completed successfully.
@@ -58,7 +63,8 @@ public sealed class NativeCommandException : ScriptException
         int? nativeExitCode,
         string standardOutput,
         string standardError,
-        Exception? innerException = null)
+        Exception? innerException = null
+    )
         : base(message, nativeExitCode is 127 ? 127 : 2, innerException)
     {
         Executable = executable;
@@ -117,23 +123,3 @@ public sealed class NativeCommandException : ScriptException
     /// </value>
     public string StandardError { get; }
 }
-
-/// <summary>
-/// Represents a Git repository or Git index operation failure.
-/// </summary>
-/// <remarks>
-/// Throw this exception when <c>LibGit2Sharp</c> cannot discover a repository, read staged content, or write the index.
-/// </remarks>
-/// <param name="message">Human-readable failure message with the Git operation and repository path when available.</param>
-/// <param name="innerException">Original exception that caused the Git operation failure, if any.</param>
-public sealed class GitScriptException(string message, Exception? innerException = null) : ScriptException(message, innerException: innerException);
-
-/// <summary>
-/// Represents a release target validation, prepare, or publish failure.
-/// </summary>
-/// <remarks>
-/// Throw this exception when release-specific state is invalid, such as a missing Dockerfile, missing package artifact, or missing Helm chart.
-/// </remarks>
-/// <param name="message">Human-readable failure message with the release target and remediation when available.</param>
-/// <param name="innerException">Original exception that caused the release target failure, if any.</param>
-public sealed class ReleaseTargetException(string message, Exception? innerException = null) : ScriptException(message, innerException: innerException);

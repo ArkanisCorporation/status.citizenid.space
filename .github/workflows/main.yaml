@@ -50,23 +50,3 @@ jobs:
       contents: write
     with:
       runner: ${{ github.event_name == 'pull_request' && 'ubuntu-latest' || inputs.runner || vars.RUNNER_DEFAULT || 'daedalus' }}
-
-  container-dry-run:
-    name: "Dry Run: Container"
-    needs: test
-    uses: ./.github/workflows/_verify-container-image.yaml
-    permissions:
-      contents: read
-    with:
-      runner: ${{ github.event_name == 'pull_request' && 'ubuntu-latest' || inputs.runner || vars.RUNNER_DEFAULT || 'daedalus' }}
-      version: 0.0.0-ci.${{ github.run_number }}.${{ github.run_attempt }}
-
-  nuget-dry-run:
-    name: "Dry Run: NuGet"
-    needs: test
-    uses: ./.github/workflows/_verify-nuget-package.yaml
-    permissions:
-      contents: read
-    with:
-      runner: ${{ github.event_name == 'pull_request' && 'ubuntu-latest' || inputs.runner || vars.RUNNER_DEFAULT || 'daedalus' }}
-      version: 0.0.0-ci.${{ github.run_number }}.${{ github.run_attempt }}

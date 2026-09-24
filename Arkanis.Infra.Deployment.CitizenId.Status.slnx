@@ -1,0 +1,30 @@
+<Solution>
+    <Folder Name="/config/">
+        <File Path=".editorconfig" />
+        <File Path=".globalconfig" />
+        <File Path=".gitattributes" />
+        <File Path=".gitignore" />
+        <File Path="AGENTS.md" />
+        <File Path="CodeMetricsConfig.txt" />
+        <File Path="Directory.Build.props" />
+        <File Path="Directory.Build.targets" />
+        <File Path="Directory.Packages.props" />
+        <File Path="global.json" />
+        <File Path="renovate.jsonc" />
+    </Folder>
+    <Folder Name="/scripts/">
+        <File Path="scripts/actionlint.cs" />
+        <File Path="scripts/actionlint/ActionlintTool.cs" />
+        <File Path="scripts/shared/Exceptions.cs" />
+        <File Path="scripts/shared/NativeCommandResult.cs" />
+        <File Path="scripts/shared/NativeCommandRunner.cs" />
+        <File Path="scripts/shared/NativeCommandSpec.cs" />
+        <File Path="scripts/shared/Packages.cs" />
+    </Folder>
+    <Folder Name="/src/">
+        <Project Path="src/Arkanis.Infra.Deployment.CitizenId.Status.AppHost/Arkanis.Infra.Deployment.CitizenId.Status.AppHost.csproj" />
+    </Folder>
+    <Folder Name="/tests/">
+        <Project Path="tests/Arkanis.Infra.Deployment.CitizenId.Status.AppHost.PublishTests/Arkanis.Infra.Deployment.CitizenId.Status.AppHost.PublishTests.csproj" />
+    </Folder>
+</Solution>

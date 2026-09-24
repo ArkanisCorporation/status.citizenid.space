@@ -1,4 +1,4 @@
-namespace Template.Scripting;
+namespace Arkanis.Infra.Deployment.CitizenId.Status.Scripting;
 
 /// <summary>
 /// Captures the result of a native command invocation.

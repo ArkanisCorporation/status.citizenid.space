@@ -29,10 +29,10 @@ Any future workflow that writes coverage results to pull requests requires a sep
 
 ## Service Architecture
 
-`Template.Service` is a controller-based `net10.0` service.
-`Template.AppHost` is the local orchestration boundary.
-`Template.Contracts` is the only packable project and remains on `netstandard2.1` for client compatibility.
-Keep the dependency direction `Template.AppHost -> Template.Service -> Template.Contracts`.
+`Arkanis.Infra.Deployment.CitizenId.Status.AppHost` is the Aspire deployment model for Kener.
+`Arkanis.Infra.Deployment.CitizenId.Status.AppHost.PublishTests` renders the production and staging Helm charts without applying them.
+Keep the deployment model focused on Kubernetes resources, External Secrets Operator references, and publish-time verification.
+This repository does not own an ASP.NET Core service, a container image, or a NuGet package.
 
 Common packages own service defaults, the liveness, readiness, and startup health paths, and Serilog integration.
 Consume Common through its public NuGet.org packages instead of duplicating those cross-cutting behaviors locally.
@@ -44,16 +44,12 @@ Keep repository text files on LF line endings.
 
 ## Repository Automation Scripts
 
-Keep repository automation scripts as C# file-based apps run with `dotnet run --file`.
-Executable file-based script entries start with `#!/usr/bin/env -S dotnet --`, followed by the shared `#:` property directives used under `scripts`.
-Use `#:include` for shared script logic.
-Use `CliWrap` through the shared native-command helpers for native command execution.
-Use `LibGit2Sharp` through the shared repository helpers for Git repository, status, blob, and index operations.
 Run workflow linting through `dotnet run --file scripts/actionlint.cs` so the repository downloads and checksum-verifies its pinned cross-platform Actionlint binary.
-When a file-based script name contains characters that are awkward for generated assembly names, set an explicit `#:property AssemblyName=...`.
-Public and internal script helper APIs and custom exceptions require XML docs that state behavior, preconditions, side effects, and thrown exceptions.
+Keep this as the only repository automation script unless a new operation cannot be expressed through shared CI or a standard CLI.
+The Actionlint script is a C# file-based app and uses the shared `CliWrap` command helpers.
+Public and internal helper APIs and custom exceptions require XML docs that state behavior, preconditions, side effects, and thrown exceptions.
 
 ## Post-Init Tasks
 
-Run `dotnet husky run --group init` and `dotnet husky install` after creating a downstream project or worktree from this template.
+Run `dotnet husky run --group init` and `dotnet husky install` after creating a checkout or worktree.
 Keep essential post-init tasks in the Husky `init` group, including `dotnet-aspire-agent-init`, so README initialization examples can point at one stable command.

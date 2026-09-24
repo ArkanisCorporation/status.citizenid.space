@@ -3,7 +3,7 @@ using System.IO.Compression;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 
-namespace Template.Scripting;
+namespace Arkanis.Infra.Deployment.CitizenId.Status.Scripting;
 
 /// <summary>
 /// Describes one checksum-pinned Actionlint release archive for a supported runtime.
@@ -12,7 +12,12 @@ namespace Template.Scripting;
 /// <param name="ArchiveName">Official Actionlint release archive name.</param>
 /// <param name="Sha256">Expected lowercase SHA-256 digest of the archive.</param>
 /// <param name="ExecutableName">Executable name contained in the archive.</param>
-internal sealed record ActionlintAsset(string Runtime, string ArchiveName, string Sha256, string ExecutableName);
+internal sealed record ActionlintAsset(
+    string Runtime,
+    string ArchiveName,
+    string Sha256,
+    string ExecutableName
+);
 
 /// <summary>
 /// Acquires and runs the checksum-pinned repository-local Actionlint binary.
@@ -28,7 +33,8 @@ internal static class ActionlintTool
     /// </summary>
     public const string Version = "1.7.12";
 
-    private const string DownloadBaseUrl = "https://github.com/rhysd/actionlint/releases/download/v1.7.12";
+    private const string DownloadBaseUrl =
+        "https://github.com/rhysd/actionlint/releases/download/v1.7.12";
 
     /// <summary>
     /// Maps an operating system and process architecture to its pinned Actionlint release archive.
@@ -37,17 +43,51 @@ internal static class ActionlintTool
     /// <param name="architecture">Current process architecture.</param>
     /// <returns>The supported release asset and its expected checksum.</returns>
     /// <exception cref="ScriptConfigurationException">Thrown when the operating system or architecture is unsupported.</exception>
-    internal static ActionlintAsset ResolveAsset(string operatingSystem, Architecture architecture)
-        => (ScriptEnvironment.LowerInvariant(operatingSystem), architecture) switch
+    internal static ActionlintAsset ResolveAsset(
+        string operatingSystem,
+        Architecture architecture
+    ) =>
+        (operatingSystem.ToLowerInvariant(), architecture) switch
         {
-            ("windows", Architecture.X64) => new("win-x64", "actionlint_1.7.12_windows_amd64.zip", "6e7241b51e6817ea6a047693d8e6fed13b31819c9a0dd6c5a726e1592d22f6e9", "actionlint.exe"),
-            ("windows", Architecture.Arm64) => new("win-arm64", "actionlint_1.7.12_windows_arm64.zip", "cadcf7ea4efe3a68728893813643cebe1185e5b1d4be5b96245f65c9a4d5ea41", "actionlint.exe"),
-            ("linux", Architecture.X64) => new("linux-x64", "actionlint_1.7.12_linux_amd64.tar.gz", "8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8", "actionlint"),
-            ("linux", Architecture.Arm64) => new("linux-arm64", "actionlint_1.7.12_linux_arm64.tar.gz", "325e971b6ba9bfa504672e29be93c24981eeb1c07576d730e9f7c8805afff0c6", "actionlint"),
-            ("macos", Architecture.X64) => new("osx-x64", "actionlint_1.7.12_darwin_amd64.tar.gz", "5b44c3bc2255115c9b69e30efc0fecdf498fdb63c5d58e17084fd5f16324c644", "actionlint"),
-            ("macos", Architecture.Arm64) => new("osx-arm64", "actionlint_1.7.12_darwin_arm64.tar.gz", "aba9ced2dee8d27fecca3dc7feb1a7f9a52caefa1eb46f3271ea66b6e0e6953f", "actionlint"),
+            ("windows", Architecture.X64) => new(
+                "win-x64",
+                "actionlint_1.7.12_windows_amd64.zip",
+                "6e7241b51e6817ea6a047693d8e6fed13b31819c9a0dd6c5a726e1592d22f6e9",
+                "actionlint.exe"
+            ),
+            ("windows", Architecture.Arm64) => new(
+                "win-arm64",
+                "actionlint_1.7.12_windows_arm64.zip",
+                "cadcf7ea4efe3a68728893813643cebe1185e5b1d4be5b96245f65c9a4d5ea41",
+                "actionlint.exe"
+            ),
+            ("linux", Architecture.X64) => new(
+                "linux-x64",
+                "actionlint_1.7.12_linux_amd64.tar.gz",
+                "8aca8db96f1b94770f1b0d72b6dddcb1ebb8123cb3712530b08cc387b349a3d8",
+                "actionlint"
+            ),
+            ("linux", Architecture.Arm64) => new(
+                "linux-arm64",
+                "actionlint_1.7.12_linux_arm64.tar.gz",
+                "325e971b6ba9bfa504672e29be93c24981eeb1c07576d730e9f7c8805afff0c6",
+                "actionlint"
+            ),
+            ("macos", Architecture.X64) => new(
+                "osx-x64",
+                "actionlint_1.7.12_darwin_amd64.tar.gz",
+                "5b44c3bc2255115c9b69e30efc0fecdf498fdb63c5d58e17084fd5f16324c644",
+                "actionlint"
+            ),
+            ("macos", Architecture.Arm64) => new(
+                "osx-arm64",
+                "actionlint_1.7.12_darwin_arm64.tar.gz",
+                "aba9ced2dee8d27fecca3dc7feb1a7f9a52caefa1eb46f3271ea66b6e0e6953f",
+                "actionlint"
+            ),
             _ => throw new ScriptConfigurationException(
-                $"Actionlint {Version} is not configured for '{operatingSystem}/{architecture}'. Supported runtimes: windows-x64, windows-arm64, linux-x64, linux-arm64, macos-x64, macos-arm64."),
+                $"Actionlint {Version} is not configured for '{operatingSystem}/{architecture}'. Supported runtimes: windows-x64, windows-arm64, linux-x64, linux-arm64, macos-x64, macos-arm64."
+            ),
         };
 
     /// <summary>
@@ -64,7 +104,16 @@ internal static class ActionlintTool
             throw new ArgumentException("Repository root cannot be empty.", nameof(repositoryRoot));
         }
 
-        return Path.GetFullPath(Path.Combine(repositoryRoot, ".tools", "actionlint", Version, asset.Runtime, asset.ExecutableName));
+        return Path.GetFullPath(
+            Path.Combine(
+                repositoryRoot,
+                ".tools",
+                "actionlint",
+                Version,
+                asset.Runtime,
+                asset.ExecutableName
+            )
+        );
     }
 
     /// <summary>
@@ -72,11 +121,15 @@ internal static class ActionlintTool
     /// </summary>
     /// <param name="standardOutput">Output from <c>actionlint -version</c>.</param>
     /// <returns><see langword="true"/> when the first non-empty line exactly matches <see cref="Version"/>.</returns>
-    internal static bool HasExpectedVersion(string standardOutput)
-        => standardOutput
-            .Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-            .FirstOrDefault() is { } reportedVersion
-            && string.Equals(reportedVersion, Version, StringComparison.Ordinal);
+    internal static bool HasExpectedVersion(string standardOutput) =>
+        standardOutput
+            .Split(
+                ['\r', '\n'],
+                StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries
+            )
+            .FirstOrDefault()
+            is { } reportedVersion
+        && string.Equals(reportedVersion, Version, StringComparison.Ordinal);
 
     /// <summary>
     /// Verifies a stream against an expected SHA-256 digest.
@@ -100,13 +153,19 @@ internal static class ActionlintTool
     /// <remarks>
     /// The checksum stream is disposed before the move so Windows does not retain a conflicting file handle.
     /// </remarks>
-    internal static void PromoteVerifiedArchive(string temporaryPath, string archivePath, string expectedSha256)
+    internal static void PromoteVerifiedArchive(
+        string temporaryPath,
+        string archivePath,
+        string expectedSha256
+    )
     {
         using (var downloadedArchive = File.OpenRead(temporaryPath))
         {
             if (!HasExpectedChecksum(downloadedArchive, expectedSha256))
             {
-                throw new ScriptConfigurationException($"Checksum verification failed for downloaded Actionlint archive '{Path.GetFileName(archivePath)}'.");
+                throw new ScriptConfigurationException(
+                    $"Checksum verification failed for downloaded Actionlint archive '{Path.GetFileName(archivePath)}'."
+                );
             }
         }
 
@@ -125,7 +184,8 @@ internal static class ActionlintTool
     internal static async Task<FileStream> AcquireCacheLockAsync(
         string lockPath,
         TimeSpan timeout,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         if (string.IsNullOrWhiteSpace(lockPath))
         {
@@ -138,8 +198,12 @@ internal static class ActionlintTool
         }
 
         var resolvedPath = Path.GetFullPath(lockPath);
-        Directory.CreateDirectory(Path.GetDirectoryName(resolvedPath)
-            ?? throw new ScriptConfigurationException($"Could not resolve the Actionlint cache lock directory for '{resolvedPath}'."));
+        Directory.CreateDirectory(
+            Path.GetDirectoryName(resolvedPath)
+                ?? throw new ScriptConfigurationException(
+                    $"Could not resolve the Actionlint cache lock directory for '{resolvedPath}'."
+                )
+        );
 
         var deadline = DateTimeOffset.UtcNow + timeout;
         IOException? lastFailure = null;
@@ -154,7 +218,8 @@ internal static class ActionlintTool
                     FileAccess.ReadWrite,
                     FileShare.None,
                     bufferSize: 1,
-                    FileOptions.Asynchronous);
+                    FileOptions.Asynchronous
+                );
             }
             catch (IOException exception)
             {
@@ -165,7 +230,8 @@ internal static class ActionlintTool
 
         throw new ScriptConfigurationException(
             $"Timed out after {timeout.TotalSeconds:F0} seconds waiting for the Actionlint cache lock '{resolvedPath}'.",
-            lastFailure);
+            lastFailure
+        );
     }
 
     /// <summary>
@@ -175,13 +241,19 @@ internal static class ActionlintTool
     /// <param name="cancellationToken">Token that cancels download or native command execution.</param>
     /// <returns>The absolute path to the verified executable.</returns>
     /// <exception cref="ScriptConfigurationException">Thrown when the platform is unsupported, the download fails, the checksum differs, or the extracted executable reports another version.</exception>
-    internal static async Task<string> AcquireAsync(string repositoryRoot, CancellationToken cancellationToken = default)
+    internal static async Task<string> AcquireAsync(
+        string repositoryRoot,
+        CancellationToken cancellationToken = default
+    )
     {
         var resolvedRoot = Path.GetFullPath(repositoryRoot);
         var asset = ResolveAsset(GetOperatingSystem(), RuntimeInformation.ProcessArchitecture);
         var executablePath = GetExecutablePath(resolvedRoot, asset);
 
-        if (File.Exists(executablePath) && await ReportsExpectedVersionAsync(executablePath, resolvedRoot, cancellationToken))
+        if (
+            File.Exists(executablePath)
+            && await ReportsExpectedVersionAsync(executablePath, resolvedRoot, cancellationToken)
+        )
         {
             return executablePath;
         }
@@ -190,9 +262,13 @@ internal static class ActionlintTool
         await using var cacheLock = await AcquireCacheLockAsync(
             Path.Combine(versionRoot, $"{asset.Runtime}.lock"),
             TimeSpan.FromMinutes(3),
-            cancellationToken);
+            cancellationToken
+        );
 
-        if (File.Exists(executablePath) && await ReportsExpectedVersionAsync(executablePath, resolvedRoot, cancellationToken))
+        if (
+            File.Exists(executablePath)
+            && await ReportsExpectedVersionAsync(executablePath, resolvedRoot, cancellationToken)
+        )
         {
             return executablePath;
         }
@@ -204,7 +280,14 @@ internal static class ActionlintTool
         var archiveIsValid = false;
         if (File.Exists(archivePath))
         {
-            await using var cachedArchive = new FileStream(archivePath, FileMode.Open, FileAccess.Read, FileShare.Read, bufferSize: 81_920, useAsync: true);
+            await using var cachedArchive = new FileStream(
+                archivePath,
+                FileMode.Open,
+                FileAccess.Read,
+                FileShare.Read,
+                bufferSize: 81_920,
+                useAsync: true
+            );
             archiveIsValid = HasExpectedChecksum(cachedArchive, asset.Sha256);
         }
 
@@ -213,8 +296,11 @@ internal static class ActionlintTool
             await DownloadArchiveAsync(asset, archivePath, cancellationToken);
         }
 
-        var runtimeDirectory = Path.GetDirectoryName(executablePath)
-            ?? throw new ScriptConfigurationException($"Could not resolve the Actionlint runtime directory for '{executablePath}'.");
+        var runtimeDirectory =
+            Path.GetDirectoryName(executablePath)
+            ?? throw new ScriptConfigurationException(
+                $"Could not resolve the Actionlint runtime directory for '{executablePath}'."
+            );
         var extractionDirectory = $"{runtimeDirectory}.extract-{Guid.NewGuid():N}";
 
         try
@@ -226,9 +312,14 @@ internal static class ActionlintTool
             {
                 File.SetUnixFileMode(
                     Path.Combine(extractionDirectory, asset.ExecutableName),
-                    UnixFileMode.UserRead | UnixFileMode.UserWrite | UnixFileMode.UserExecute |
-                    UnixFileMode.GroupRead | UnixFileMode.GroupExecute |
-                    UnixFileMode.OtherRead | UnixFileMode.OtherExecute);
+                    UnixFileMode.UserRead
+                        | UnixFileMode.UserWrite
+                        | UnixFileMode.UserExecute
+                        | UnixFileMode.GroupRead
+                        | UnixFileMode.GroupExecute
+                        | UnixFileMode.OtherRead
+                        | UnixFileMode.OtherExecute
+                );
             }
 
             if (Directory.Exists(runtimeDirectory))
@@ -249,7 +340,9 @@ internal static class ActionlintTool
         if (!await ReportsExpectedVersionAsync(executablePath, resolvedRoot, cancellationToken))
         {
             Directory.Delete(runtimeDirectory, recursive: true);
-            throw new ScriptConfigurationException($"The extracted Actionlint executable did not report pinned version {Version}.");
+            throw new ScriptConfigurationException(
+                $"The extracted Actionlint executable did not report pinned version {Version}."
+            );
         }
 
         return executablePath;
@@ -266,7 +359,8 @@ internal static class ActionlintTool
     internal static async Task<NativeCommandResult> RunAsync(
         string repositoryRoot,
         IReadOnlyList<string> arguments,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default
+    )
     {
         var executablePath = await AcquireAsync(repositoryRoot, cancellationToken);
         return await NativeCommandRunner.RunAsync(
@@ -276,17 +370,34 @@ internal static class ActionlintTool
                 Arguments = arguments,
                 WorkingDirectory = Path.GetFullPath(repositoryRoot),
             },
-            cancellationToken);
+            cancellationToken
+        );
     }
 
-    private static async Task DownloadArchiveAsync(ActionlintAsset asset, string archivePath, CancellationToken cancellationToken)
+    private static async Task DownloadArchiveAsync(
+        ActionlintAsset asset,
+        string archivePath,
+        CancellationToken cancellationToken
+    )
     {
         var temporaryPath = $"{archivePath}.{Guid.NewGuid():N}.download";
         try
         {
             using var client = new HttpClient { Timeout = TimeSpan.FromMinutes(2) };
-            await using var source = await client.GetStreamAsync($"{DownloadBaseUrl}/{asset.ArchiveName}", cancellationToken);
-            await using (var destination = new FileStream(temporaryPath, FileMode.Create, FileAccess.Write, FileShare.None, bufferSize: 81_920, useAsync: true))
+            await using var source = await client.GetStreamAsync(
+                $"{DownloadBaseUrl}/{asset.ArchiveName}",
+                cancellationToken
+            );
+            await using (
+                var destination = new FileStream(
+                    temporaryPath,
+                    FileMode.Create,
+                    FileAccess.Write,
+                    FileShare.None,
+                    bufferSize: 81_920,
+                    useAsync: true
+                )
+            )
             {
                 await source.CopyToAsync(destination, cancellationToken);
             }
@@ -301,7 +412,8 @@ internal static class ActionlintTool
         {
             throw new ScriptConfigurationException(
                 $"Could not download Actionlint {Version} archive '{asset.ArchiveName}': {exception.Message}",
-                exception);
+                exception
+            );
         }
         finally
         {
@@ -312,7 +424,11 @@ internal static class ActionlintTool
         }
     }
 
-    private static void ExtractArchive(string archivePath, string destinationDirectory, ActionlintAsset asset)
+    private static void ExtractArchive(
+        string archivePath,
+        string destinationDirectory,
+        ActionlintAsset asset
+    )
     {
         if (asset.ArchiveName.EndsWith(".zip", StringComparison.Ordinal))
         {
@@ -325,7 +441,11 @@ internal static class ActionlintTool
         TarFile.ExtractToDirectory(gzip, destinationDirectory, overwriteFiles: true);
     }
 
-    private static async Task<bool> ReportsExpectedVersionAsync(string executablePath, string workingDirectory, CancellationToken cancellationToken)
+    private static async Task<bool> ReportsExpectedVersionAsync(
+        string executablePath,
+        string workingDirectory,
+        CancellationToken cancellationToken
+    )
     {
         var result = await NativeCommandRunner.RunAsync(
             new NativeCommandSpec
@@ -335,16 +455,16 @@ internal static class ActionlintTool
                 WorkingDirectory = workingDirectory,
                 ThrowOnFailure = false,
             },
-            cancellationToken);
+            cancellationToken
+        );
         return result.ExitCode == 0 && HasExpectedVersion(result.StandardOutput);
     }
 
-    private static string GetOperatingSystem()
-        => OperatingSystem.IsWindows()
-            ? "windows"
-            : OperatingSystem.IsLinux()
-                ? "linux"
-                : OperatingSystem.IsMacOS()
-                    ? "macos"
-                    : throw new ScriptConfigurationException("Actionlint direct download supports only Windows, Linux, and macOS.");
+    private static string GetOperatingSystem() =>
+        OperatingSystem.IsWindows() ? "windows"
+        : OperatingSystem.IsLinux() ? "linux"
+        : OperatingSystem.IsMacOS() ? "macos"
+        : throw new ScriptConfigurationException(
+            "Actionlint direct download supports only Windows, Linux, and macOS."
+        );
 }

@@ -1,4 +1,4 @@
-namespace Arkanis.Template.AppHost.PublishTests;
+namespace Arkanis.Infra.Deployment.CitizenId.Status.AppHost.PublishTests;
 
 using System.Text.Json;
 
@@ -15,9 +15,15 @@ public sealed class KenerPublishTests
     [Theory]
     [InlineData("Kubernetes-Production", "citizenid-status-production")]
     [InlineData("Kubernetes-Staging", "citizenid-status-staging")]
-    public async Task Publish_uses_the_selected_Kubernetes_namespace(string environment, string expectedNamespace)
+    public async Task Publish_uses_the_selected_Kubernetes_namespace(
+        string environment,
+        string expectedNamespace
+    )
     {
-        await using var chart = await AspirePublishFixture.PublishAsync(environment, TestContext.Current.CancellationToken);
+        await using var chart = await AspirePublishFixture.PublishAsync(
+            environment,
+            TestContext.Current.CancellationToken
+        );
 
         Assert.True(chart.ExitCode == 0, chart.Output);
 
@@ -36,19 +42,25 @@ public sealed class KenerPublishTests
         "Kubernetes-Production",
         "status.citizenid.space",
         "citizenid-production-status",
-        "status.citizenid.dev")]
+        "status.citizenid.dev"
+    )]
     [InlineData(
         "Kubernetes-Staging",
         "status.citizenid.dev",
         "citizenid-staging-status",
-        "status.citizenid.space")]
+        "status.citizenid.space"
+    )]
     public async Task Publish_contains_an_environment_isolated_Kener_application(
         string environment,
         string expectedHost,
         string expectedDatabase,
-        string excludedHost)
+        string excludedHost
+    )
     {
-        await using var chart = await AspirePublishFixture.PublishAsync(environment, TestContext.Current.CancellationToken);
+        await using var chart = await AspirePublishFixture.PublishAsync(
+            environment,
+            TestContext.Current.CancellationToken
+        );
 
         Assert.True(chart.ExitCode == 0, chart.Output);
 
@@ -70,7 +82,10 @@ public sealed class KenerPublishTests
     [Fact]
     public async Task Production_publish_contains_the_documented_availability_controls()
     {
-        await using var chart = await AspirePublishFixture.PublishAsync("Kubernetes-Production", TestContext.Current.CancellationToken);
+        await using var chart = await AspirePublishFixture.PublishAsync(
+            "Kubernetes-Production",
+            TestContext.Current.CancellationToken
+        );
 
         Assert.True(chart.ExitCode == 0, chart.Output);
 
@@ -101,27 +116,40 @@ public sealed class KenerPublishTests
         var configurationPath = Path.Combine(
             repositoryRoot.FullName,
             "src",
-            "Template.AppHost",
-            $"appsettings.{environment.Replace('-', '.')}.json");
+            "Arkanis.Infra.Deployment.CitizenId.Status.AppHost",
+            $"appsettings.{environment.Replace('-', '.')}.json"
+        );
         using var document = JsonDocument.Parse(File.ReadAllText(configurationPath));
 
-        return document.RootElement
-            .GetProperty("Kubernetes")
-            .GetProperty("Namespace")
-            .GetString()
-            ?? throw new InvalidOperationException($"The deployment configuration '{configurationPath}' does not define Kubernetes:Namespace.");
+        return document.RootElement.GetProperty("Kubernetes").GetProperty("Namespace").GetString()
+            ?? throw new InvalidOperationException(
+                $"The deployment configuration '{configurationPath}' does not define Kubernetes:Namespace."
+            );
     }
 
     private static DirectoryInfo FindRepositoryRoot()
     {
-        for (var directory = new DirectoryInfo(AppContext.BaseDirectory); directory is not null; directory = directory.Parent)
+        for (
+            var directory = new DirectoryInfo(AppContext.BaseDirectory);
+            directory is not null;
+            directory = directory.Parent
+        )
         {
-            if (File.Exists(Path.Combine(directory.FullName, "Template.slnx")))
+            if (
+                File.Exists(
+                    Path.Combine(
+                        directory.FullName,
+                        "Arkanis.Infra.Deployment.CitizenId.Status.slnx"
+                    )
+                )
+            )
             {
                 return directory;
             }
         }
 
-        throw new DirectoryNotFoundException("Could not locate the repository root containing Template.slnx.");
+        throw new DirectoryNotFoundException(
+            "Could not locate the repository root containing Arkanis.Infra.Deployment.CitizenId.Status.slnx."
+        );
     }
 }

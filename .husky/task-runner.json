@@ -2,26 +2,15 @@
    "$schema": "https://alirezanet.github.io/Husky.Net/schema.json",
    "tasks": [
        {
-           "name": "prepare-shell-scripts",
-           "group": "pre-commit",
-           "command": "dotnet",
-           "args": [ "run", "--file", "scripts/prepare-shell-scripts.cs" ]
-       },
-       {
-           "name": "update-shell-script-permissions",
-           "command": "dotnet",
-           "args": [ "run", "--file", "scripts/update-shell-script-permissions.cs" ]
-       },
-       {
            "name": "dotnet-format-check",
            "group": "pre-commit",
            "command": "dotnet",
-           "args": [ "format", "Template.slnx", "--verify-no-changes", "--verbosity", "diagnostic", "--no-restore" ]
+           "args": [ "format", "Arkanis.Infra.Deployment.CitizenId.Status.slnx", "--verify-no-changes", "--verbosity", "diagnostic", "--no-restore" ]
        },
        {
            "name": "dotnet-format",
            "command": "dotnet",
-           "args": [ "format", "Template.slnx", "--verbosity", "diagnostic", "--no-restore" ]
+           "args": [ "format", "Arkanis.Infra.Deployment.CitizenId.Status.slnx", "--verbosity", "diagnostic", "--no-restore" ]
        },
        {
            "name": "dotnet-aspire-agent-init",

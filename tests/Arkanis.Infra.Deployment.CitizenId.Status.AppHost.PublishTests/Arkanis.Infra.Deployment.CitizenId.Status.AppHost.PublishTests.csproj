@@ -4,9 +4,10 @@
         <ImplicitUsings>enable</ImplicitUsings>
         <Nullable>enable</Nullable>
         <IsPackable>false</IsPackable>
-        <RootNamespace>Arkanis.Template.AppHost.PublishTests</RootNamespace>
+        <RootNamespace>Arkanis.Infra.Deployment.CitizenId.Status.AppHost.PublishTests</RootNamespace>
     </PropertyGroup>
     <ItemGroup>
+        <PackageReference Include="coverlet.collector" PrivateAssets="all" />
         <PackageReference Include="Microsoft.NET.Test.Sdk" />
         <PackageReference Include="xunit.runner.visualstudio" PrivateAssets="all" />
         <PackageReference Include="xunit.v3" />

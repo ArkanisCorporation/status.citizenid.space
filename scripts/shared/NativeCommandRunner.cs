@@ -5,7 +5,7 @@ using System.Text;
 using CliWrap;
 using CliWrap.Exceptions;
 
-namespace Template.Scripting;
+namespace Arkanis.Infra.Deployment.CitizenId.Status.Scripting;
 
 /// <summary>
 /// Runs native commands using <c>CliWrap</c>.
@@ -34,7 +34,10 @@ public static class NativeCommandRunner
     /// <exception cref="NativeCommandException">
     /// Thrown when the native process cannot start, <c>CliWrap</c> validation fails, or the process exits with a non-zero code while <see cref="NativeCommandSpec.ThrowOnFailure" /> is enabled.
     /// </exception>
-    public static async Task<NativeCommandResult> RunAsync(NativeCommandSpec spec, CancellationToken cancellationToken = default)
+    public static async Task<NativeCommandResult> RunAsync(
+        NativeCommandSpec spec,
+        CancellationToken cancellationToken = default
+    )
     {
         ArgumentNullException.ThrowIfNull(spec);
         ArgumentNullException.ThrowIfNull(spec.Arguments);
@@ -46,7 +49,9 @@ public static class NativeCommandRunner
 
         if (string.IsNullOrWhiteSpace(spec.WorkingDirectory))
         {
-            throw new ScriptConfigurationException($"Native command '{spec.Executable}' has no working directory.");
+            throw new ScriptConfigurationException(
+                $"Native command '{spec.Executable}' has no working directory."
+            );
         }
 
         var standardOutput = new StringBuilder();
@@ -58,17 +63,26 @@ public static class NativeCommandRunner
                 .WithArguments(spec.Arguments)
                 .WithWorkingDirectory(spec.WorkingDirectory)
                 .WithValidation(spec.Validation)
-                .WithStandardOutputPipe(PipeTarget.Merge(
-                    PipeTarget.ToStringBuilder(standardOutput),
-                    PipeTarget.ToDelegate(Console.Out.WriteLine)))
-                .WithStandardErrorPipe(PipeTarget.Merge(
-                    PipeTarget.ToStringBuilder(standardError),
-                    PipeTarget.ToDelegate(Console.Error.WriteLine)));
+                .WithStandardOutputPipe(
+                    PipeTarget.Merge(
+                        PipeTarget.ToStringBuilder(standardOutput),
+                        PipeTarget.ToDelegate(Console.Out.WriteLine)
+                    )
+                )
+                .WithStandardErrorPipe(
+                    PipeTarget.Merge(
+                        PipeTarget.ToStringBuilder(standardError),
+                        PipeTarget.ToDelegate(Console.Error.WriteLine)
+                    )
+                );
 
             if (spec.ConfigureCommand is not null)
             {
-                command = spec.ConfigureCommand(command)
-                    ?? throw new ScriptConfigurationException($"Native command '{spec.Executable}' returned a null CliWrap command configuration.");
+                command =
+                    spec.ConfigureCommand(command)
+                    ?? throw new ScriptConfigurationException(
+                        $"Native command '{spec.Executable}' returned a null CliWrap command configuration."
+                    );
             }
 
             var commandResult = await command.ExecuteAsync(cancellationToken);
@@ -86,7 +100,8 @@ public static class NativeCommandRunner
                     nativeResult.ExitCode,
                     nativeResult.StandardOutput,
                     nativeResult.StandardError,
-                    innerException: null);
+                    innerException: null
+                );
             }
 
             return nativeResult;
@@ -102,7 +117,8 @@ public static class NativeCommandRunner
                 ex.ExitCode,
                 standardOutput.ToString(),
                 standardError.ToString(),
-                ex);
+                ex
+            );
         }
         catch (OperationCanceledException)
         {
@@ -115,7 +131,8 @@ public static class NativeCommandRunner
                 exitCode: null,
                 standardOutput.ToString(),
                 standardError.ToString(),
-                ex);
+                ex
+            );
         }
     }
 
@@ -124,24 +141,26 @@ public static class NativeCommandRunner
         int? exitCode,
         string standardOutput,
         string standardError,
-        Exception? innerException)
+        Exception? innerException
+    )
     {
         var message = new StringBuilder();
         _ = exitCode is int knownExitCode
-            ? message.Append(CultureInfo.InvariantCulture, $"Native command '{spec.Executable}' failed with exit code {knownExitCode} in '{spec.WorkingDirectory}'.")
-            : message.Append(CultureInfo.InvariantCulture, $"Native command '{spec.Executable}' failed before a normal exit code was available in '{spec.WorkingDirectory}'.");
+            ? message.Append(
+                CultureInfo.InvariantCulture,
+                $"Native command '{spec.Executable}' failed with exit code {knownExitCode} in '{spec.WorkingDirectory}'."
+            )
+            : message.Append(
+                CultureInfo.InvariantCulture,
+                $"Native command '{spec.Executable}' failed before a normal exit code was available in '{spec.WorkingDirectory}'."
+            );
 
-        _ = message
-            .AppendLine()
-            .Append("Command: ")
-            .Append(spec.Executable);
+        _ = message.AppendLine().Append("Command: ").Append(spec.Executable);
 
         var arguments = FormatArguments(spec.Arguments);
         if (!string.IsNullOrWhiteSpace(arguments))
         {
-            _ = message
-                .Append(' ')
-                .Append(arguments);
+            _ = message.Append(' ').Append(arguments);
         }
 
         AppendStreamSummary(message, "Standard output", standardOutput);
@@ -155,13 +174,12 @@ public static class NativeCommandRunner
             exitCode,
             standardOutput,
             standardError,
-            innerException);
+            innerException
+        );
     }
 
-    private static string FormatArguments(IReadOnlyList<string> arguments)
-        => string.Join(
-            " ",
-            arguments.Select(FormatArgument));
+    private static string FormatArguments(IReadOnlyList<string> arguments) =>
+        string.Join(" ", arguments.Select(FormatArgument));
 
     private static string FormatArgument(string argument)
     {
@@ -170,17 +188,20 @@ public static class NativeCommandRunner
             return "\"\"";
         }
 
-        return argument.Any(char.IsWhiteSpace) ? $"\"{argument.Replace("\"", "\\\"", StringComparison.Ordinal)}\"" : argument;
+        return argument.Any(char.IsWhiteSpace)
+            ? $"\"{argument.Replace("\"", "\\\"", StringComparison.Ordinal)}\""
+            : argument;
     }
 
-    private static void AppendStreamSummary(StringBuilder message, string streamName, string streamContent)
+    private static void AppendStreamSummary(
+        StringBuilder message,
+        string streamName,
+        string streamContent
+    )
     {
         if (string.IsNullOrEmpty(streamContent))
         {
-            _ = message
-                .AppendLine()
-                .Append(streamName)
-                .Append(": <empty>");
+            _ = message.AppendLine().Append(streamName).Append(": <empty>");
             return;
         }
 
@@ -191,13 +212,8 @@ public static class NativeCommandRunner
             normalized = $"{normalized[^MaxCharacters..]}";
         }
 
-        _ = message
-            .AppendLine()
-            .Append(streamName)
-            .AppendLine(":")
-            .Append(normalized);
+        _ = message.AppendLine().Append(streamName).AppendLine(":").Append(normalized);
     }
 
-    private static string[] CopyArguments(IReadOnlyList<string> arguments)
-        => arguments.ToArray();
+    private static string[] CopyArguments(IReadOnlyList<string> arguments) => arguments.ToArray();
 }

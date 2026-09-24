@@ -41,7 +41,7 @@ jobs:
       runs-on: ${{ inputs.runner }}
       runs-on-self-hosted: ${{ inputs.runner != 'ubuntu-latest' }}
       global-json-file: global.json
-      solution: Template.slnx
+      solution: Arkanis.Infra.Deployment.CitizenId.Status.slnx
       test-filter: ${{ inputs.test_filter }}
       coverage-pr-comment: false
       upload-coverage: true
@@ -57,7 +57,7 @@ jobs:
       runs-on: ${{ inputs.runner }}
       runs-on-self-hosted: ${{ inputs.runner != 'ubuntu-latest' }}
       global-json-file: global.json
-      solution: Template.slnx
+      solution: Arkanis.Infra.Deployment.CitizenId.Status.slnx
       install-tool: true
       timeout-minutes: 20
 
@@ -82,7 +82,7 @@ jobs:
           runs-on: ${{ inputs.runner }}
           runs-on-self-hosted: ${{ inputs.runner != 'ubuntu-latest' }}
           global-json-file: global.json
-          solution: Template.slnx
+          solution: Arkanis.Infra.Deployment.CitizenId.Status.slnx
 
       - name: Build with complexity analyzers
-        run: dotnet build Template.slnx --no-restore --verbosity normal -warnaserror:CA1502 -warnaserror:CA1509
+        run: dotnet build Arkanis.Infra.Deployment.CitizenId.Status.slnx --no-restore --verbosity normal -warnaserror:CA1502 -warnaserror:CA1509

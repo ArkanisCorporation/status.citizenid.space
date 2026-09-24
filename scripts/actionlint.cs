@@ -9,18 +9,21 @@
 
 using System.IO;
 using System.Threading;
-using Template.Scripting;
+using Arkanis.Infra.Deployment.CitizenId.Status.Scripting;
 
 using var cancellationTokenSource = new CancellationTokenSource();
 Console.CancelKeyPress += OnCancelKeyPress;
 
 try
 {
-    IReadOnlyList<string> actionlintArguments = args.Length == 0
-        ? ["-config-file", ".github/actionlint.yaml"]
-        : args;
+    IReadOnlyList<string> actionlintArguments =
+        args.Length == 0 ? ["-config-file", ".github/actionlint.yaml"] : args;
 
-    await ActionlintTool.RunAsync(Directory.GetCurrentDirectory(), actionlintArguments, cancellationTokenSource.Token);
+    await ActionlintTool.RunAsync(
+        Directory.GetCurrentDirectory(),
+        actionlintArguments,
+        cancellationTokenSource.Token
+    );
     return 0;
 }
 catch (ScriptException exception)
