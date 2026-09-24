@@ -53,6 +53,9 @@ Publishing generates Helm artifacts only.
 It does not create or resolve 1Password items, print secret values, apply Helm resources, or change the Kubernetes cluster.
 The generated chart expects the configured ClusterSecretStores and existing CloudNativePG credentials secret at deployment time.
 
+The tracked [`aspire.config.json`](aspire.config.json) selects this AppHost and disables default watch mode.
+This keeps non-interactive publishing, including the CI artifact tests, deterministic regardless of a developer or runner's global Aspire CLI setting.
+
 The deployment renders a two-replica Kener workload with zone-preferred anti-affinity, a PodDisruptionBudget, health probes, explicit CPU and memory resources, and a persistent Redis StatefulSet.
 Kubernetes resource names and environment identities are stable deployment contracts and are independent of this repository’s .NET project names.
 

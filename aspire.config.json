@@ -1,0 +1,8 @@
+{
+  "features": {
+    "defaultWatchEnabled": "false"
+  },
+  "appHost": {
+    "path": "src/Arkanis.Infra.Deployment.CitizenId.Status.AppHost/Arkanis.Infra.Deployment.CitizenId.Status.AppHost.csproj"
+  }
+}
