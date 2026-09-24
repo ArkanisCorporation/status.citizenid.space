@@ -54,7 +54,8 @@ dotnet aspire publish --apphost src/Arkanis.Infra.Deployment.CitizenId.Status.Ap
 Publishing generates Helm artifacts only.
 It does not create or resolve 1Password items, print secret values, apply Helm resources, or change the Kubernetes cluster.
 The generated chart expects the configured ClusterSecretStores and existing CloudNativePG credentials secret at deployment time.
-The `postgres-production` infrastructure chart provisions the `citizenid-status-production` and `citizenid-status-staging` roles and their matching source Secrets before a Kener deployment consumes them.
+The [`postgres-production` infrastructure chart](https://github.com/ArkanisCorporation/Infrastructure/tree/main/kubernetes/infrastructure/postgres-production) provisions the `citizenid-status-production` and `citizenid-status-staging` roles and their matching source Secrets before a Kener deployment consumes them.
+The app-local Kener database ExternalSecret refreshes every minute so it recovers promptly when its independently reconciled source Secret becomes available.
 
 The tracked [`aspire.config.json`](aspire.config.json) selects this AppHost and disables default watch mode.
 This keeps non-interactive publishing, including the CI artifact tests, deterministic regardless of a developer or runner's global Aspire CLI setting.

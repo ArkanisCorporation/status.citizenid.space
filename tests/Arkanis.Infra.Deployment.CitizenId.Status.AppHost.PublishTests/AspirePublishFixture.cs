@@ -172,6 +172,20 @@ internal sealed class PublishedChart(string outputDirectory, int exitCode, strin
         return string.Join(Environment.NewLine, artifacts);
     }
 
+    /// <summary>
+    /// Reads a generated artifact relative to the published chart output directory.
+    /// </summary>
+    /// <param name="relativePath">The artifact path relative to the chart output directory.</param>
+    /// <param name="cancellationToken">The cancellation token for file I/O.</param>
+    /// <returns>The artifact content, or an empty string when it was not emitted.</returns>
+    public async Task<string> ReadArtifactAsync(string relativePath, CancellationToken cancellationToken)
+    {
+        var artifactPath = Path.Combine(outputDirectory, relativePath);
+        return File.Exists(artifactPath)
+            ? await File.ReadAllTextAsync(artifactPath, cancellationToken)
+            : string.Empty;
+    }
+
     /// <inheritdoc />
     public ValueTask DisposeAsync()
     {

@@ -101,12 +101,18 @@ public sealed class KenerPublishTests
         Assert.True(chart.ExitCode == 0, chart.Output);
 
         var artifacts = await chart.ReadAllTemplatesAsync(TestContext.Current.CancellationToken);
+        var databaseExternalSecret = await chart.ReadArtifactAsync(
+            Path.Combine("templates", "database", "externalsecret.yaml"),
+            TestContext.Current.CancellationToken
+        );
 
         Assert.Contains(expectedHost, artifacts, StringComparison.Ordinal);
         Assert.Contains(expectedDatabase, artifacts, StringComparison.Ordinal);
         Assert.Contains($"owner: {expectedOwner}", artifacts, StringComparison.Ordinal);
         Assert.Contains("name: production", artifacts, StringComparison.Ordinal);
         Assert.Contains($"key: {expectedCredentialsSecret}", artifacts, StringComparison.Ordinal);
+        Assert.Contains("name: kener-database", databaseExternalSecret, StringComparison.Ordinal);
+        Assert.Contains("refreshInterval: 1m", databaseExternalSecret, StringComparison.Ordinal);
         Assert.Contains("rajnandan1/kener", artifacts, StringComparison.Ordinal);
         Assert.Contains("postgresql://", artifacts, StringComparison.Ordinal);
         Assert.Contains("SMTP_HOST", artifacts, StringComparison.Ordinal);
