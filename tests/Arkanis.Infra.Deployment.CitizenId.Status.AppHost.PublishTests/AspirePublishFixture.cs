@@ -18,7 +18,7 @@ internal static partial class AspirePublishFixture
         string environment,
         CancellationToken cancellationToken
     )
-        => await ExecuteAsync("publish", null, environment, cancellationToken);
+        => await ExecuteAsync("publish", null, false, environment, cancellationToken);
 
     /// <summary>
     /// Executes the non-mutating External Secrets emission step for the supplied deployment environment.
@@ -30,19 +30,21 @@ internal static partial class AspirePublishFixture
         string environment,
         CancellationToken cancellationToken
     )
-        => await ExecuteAsync("do", "emit-externalsecrets-kener-kubernetes", environment, cancellationToken);
+        => await ExecuteAsync("do", "emit-externalsecrets-kener-kubernetes", true, environment, cancellationToken);
 
     /// <summary>
     /// Executes an Aspire operation that renders deployment artifacts without invoking Helm deployment.
     /// </summary>
     /// <param name="command">The Aspire command to execute.</param>
     /// <param name="step">The optional named pipeline step for the command.</param>
+    /// <param name="clearDeploymentState">Whether the pipeline must ignore persisted deployment state.</param>
     /// <param name="environment">The AppHost deployment environment.</param>
     /// <param name="cancellationToken">The test cancellation token.</param>
     /// <returns>The generated chart, including non-secret diagnostic output.</returns>
     private static async Task<PublishedChart> ExecuteAsync(
         string command,
         string? step,
+        bool clearDeploymentState,
         string environment,
         CancellationToken cancellationToken
     )
@@ -83,6 +85,11 @@ internal static partial class AspirePublishFixture
         processStartInfo.ArgumentList.Add("--output-path");
         processStartInfo.ArgumentList.Add(outputDirectory);
         processStartInfo.ArgumentList.Add("--non-interactive");
+        if (clearDeploymentState)
+        {
+            processStartInfo.ArgumentList.Add("--clear-cache");
+            processStartInfo.ArgumentList.Add("true");
+        }
 
         using var process =
             Process.Start(processStartInfo)

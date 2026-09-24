@@ -13,6 +13,7 @@ Arkanis.Infra.Deployment.CitizenId.Status.AppHost (net10.0)
 The AppHost is the deployment model.
 The publish tests run the non-mutating `emit-externalsecrets-kener-kubernetes` pipeline step for production and staging and assert the deployment contract without connecting to Kubernetes or 1Password.
 The step includes parameter processing, Kubernetes chart rendering, and External Secrets emission, but stops before Helm prerequisites and `helm-deploy-kener-kubernetes`.
+The test passes `--clear-cache true` to parameter processing, so cached Aspire deployment-state values cannot hide a missing ESO-generated credential.
 
 ## Initialize A Checkout
 
@@ -53,6 +54,7 @@ dotnet aspire publish --apphost src/Arkanis.Infra.Deployment.CitizenId.Status.Ap
 Publishing generates Helm artifacts only.
 It does not create or resolve 1Password items, print secret values, apply Helm resources, or change the Kubernetes cluster.
 The generated chart expects the configured ClusterSecretStores and existing CloudNativePG credentials secret at deployment time.
+The `postgres-production` infrastructure chart provisions the `citizenid-status-production` and `citizenid-status-staging` roles and their matching source Secrets before a Kener deployment consumes them.
 
 The tracked [`aspire.config.json`](aspire.config.json) selects this AppHost and disables default watch mode.
 This keeps non-interactive publishing, including the CI artifact tests, deterministic regardless of a developer or runner's global Aspire CLI setting.

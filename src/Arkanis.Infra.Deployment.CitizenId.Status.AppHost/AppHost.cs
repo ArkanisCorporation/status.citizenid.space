@@ -41,8 +41,10 @@ if (isKubernetesDeployment)
                     $"{{{{ `postgresql://{{{{ .username | urlquery }}}}:{{{{ .password | urlquery }}}}@{{{{ .host }}}}:{{{{ .port }}}}/{annotation.Credentials.DatabaseName}` }}}}"
                 )
         );
-    var redisPassword = builder.AddParameter("redis-password", true);
-    var kenerSecretKey = builder.AddParameter("kener-secret-key", true);
+    // Aspire persists all parameters before ESO materializes generated credentials.
+    // These defaults satisfy only that deployment-state contract and are never published into Kubernetes.
+    var redisPassword = builder.AddParameter("redis-password", string.Empty, secret: true);
+    var kenerSecretKey = builder.AddParameter("kener-secret-key", string.Empty, secret: true);
     var smtpUsername = builder.AddParameter("smtp-username", true);
     var smtpPassword = builder.AddParameter("smtp-password", true);
 

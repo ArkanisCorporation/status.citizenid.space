@@ -22,6 +22,8 @@ public sealed class KenerPublishTests
         );
 
         Assert.True(chart.ExitCode == 0, chart.Output);
+        Assert.DoesNotContain("Failed to save parameter redis-password", chart.Output, StringComparison.Ordinal);
+        Assert.DoesNotContain("Failed to save parameter kener-secret-key", chart.Output, StringComparison.Ordinal);
 
         var artifacts = await chart.ReadAllTemplatesAsync(TestContext.Current.CancellationToken);
 
@@ -29,6 +31,7 @@ public sealed class KenerPublishTests
         Assert.Contains("kind: ExternalSecret", artifacts, StringComparison.Ordinal);
         Assert.Contains("KENER_SECRET_KEY", artifacts, StringComparison.Ordinal);
         Assert.Contains("REDIS_PASSWORD", artifacts, StringComparison.Ordinal);
+        Assert.Contains("generatorRef", artifacts, StringComparison.Ordinal);
         Assert.Contains("secretKeyRef", artifacts, StringComparison.Ordinal);
     }
 
@@ -61,24 +64,32 @@ public sealed class KenerPublishTests
     /// <param name="environment">The AppHost deployment environment.</param>
     /// <param name="expectedHost">The expected public status hostname.</param>
     /// <param name="expectedDatabase">The expected CloudNativePG database name.</param>
+    /// <param name="expectedOwner">The provisioned CloudNativePG role that owns the database.</param>
+    /// <param name="expectedCredentialsSecret">The provisioned CloudNativePG role credential source.</param>
     /// <param name="excludedHost">The hostname belonging to the other environment.</param>
     [Theory]
     [InlineData(
         "Kubernetes-Production",
         "status.citizenid.space",
         "citizenid-production-status",
+        "citizenid-status-production",
+        "citizenid-status-production-credentials",
         "status.citizenid.dev"
     )]
     [InlineData(
         "Kubernetes-Staging",
         "status.citizenid.dev",
         "citizenid-staging-status",
+        "citizenid-status-staging",
+        "citizenid-status-staging-credentials",
         "status.citizenid.space"
     )]
     public async Task Publish_contains_an_environment_isolated_Kener_application(
         string environment,
         string expectedHost,
         string expectedDatabase,
+        string expectedOwner,
+        string expectedCredentialsSecret,
         string excludedHost
     )
     {
@@ -93,6 +104,9 @@ public sealed class KenerPublishTests
 
         Assert.Contains(expectedHost, artifacts, StringComparison.Ordinal);
         Assert.Contains(expectedDatabase, artifacts, StringComparison.Ordinal);
+        Assert.Contains($"owner: {expectedOwner}", artifacts, StringComparison.Ordinal);
+        Assert.Contains("name: production", artifacts, StringComparison.Ordinal);
+        Assert.Contains($"key: {expectedCredentialsSecret}", artifacts, StringComparison.Ordinal);
         Assert.Contains("rajnandan1/kener", artifacts, StringComparison.Ordinal);
         Assert.Contains("postgresql://", artifacts, StringComparison.Ordinal);
         Assert.Contains("SMTP_HOST", artifacts, StringComparison.Ordinal);
