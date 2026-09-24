@@ -11,7 +11,8 @@ Arkanis.Infra.Deployment.CitizenId.Status.AppHost (net10.0)
 ```
 
 The AppHost is the deployment model.
-The publish tests render the production and staging charts and assert the deployment contract without connecting to Kubernetes or 1Password.
+The publish tests run the non-mutating `prepare-kener-kubernetes` pipeline step for production and staging and assert the deployment contract without connecting to Kubernetes or 1Password.
+Preparation includes parameter processing, External Secrets emission, and Helm chart validation, but stops before `helm-deploy-kener-kubernetes`.
 
 ## Initialize A Checkout
 

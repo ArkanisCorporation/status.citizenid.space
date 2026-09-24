@@ -8,6 +8,31 @@ using System.Text.Json;
 public sealed class KenerPublishTests
 {
     /// <summary>
+    /// Verifies that non-mutating Kubernetes preparation resolves the generated External Secrets parameters.
+    /// </summary>
+    /// <param name="environment">The AppHost deployment environment.</param>
+    [Theory]
+    [InlineData("Kubernetes-Production")]
+    [InlineData("Kubernetes-Staging")]
+    public async Task Prepare_materializes_generated_External_Secrets_parameters(string environment)
+    {
+        await using var chart = await AspirePublishFixture.PrepareAsync(
+            environment,
+            TestContext.Current.CancellationToken
+        );
+
+        Assert.True(chart.ExitCode == 0, chart.Output);
+
+        var artifacts = await chart.ReadAllTemplatesAsync(TestContext.Current.CancellationToken);
+
+        Assert.Contains("apiVersion: external-secrets.io/v1", artifacts, StringComparison.Ordinal);
+        Assert.Contains("kind: ExternalSecret", artifacts, StringComparison.Ordinal);
+        Assert.Contains("KENER_SECRET_KEY", artifacts, StringComparison.Ordinal);
+        Assert.Contains("REDIS_PASSWORD", artifacts, StringComparison.Ordinal);
+        Assert.Contains("secretKeyRef", artifacts, StringComparison.Ordinal);
+    }
+
+    /// <summary>
     /// Verifies that publishing selects the requested Kubernetes namespace.
     /// </summary>
     /// <param name="environment">The AppHost deployment environment.</param>

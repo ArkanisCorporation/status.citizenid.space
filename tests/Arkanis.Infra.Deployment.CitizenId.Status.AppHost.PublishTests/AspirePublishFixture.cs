@@ -18,6 +18,34 @@ internal static partial class AspirePublishFixture
         string environment,
         CancellationToken cancellationToken
     )
+        => await ExecuteAsync("publish", null, environment, cancellationToken);
+
+    /// <summary>
+    /// Executes the non-mutating Kubernetes preparation step for the supplied deployment environment.
+    /// </summary>
+    /// <param name="environment">The AppHost deployment environment.</param>
+    /// <param name="cancellationToken">The test cancellation token.</param>
+    /// <returns>The generated chart, including non-secret diagnostic output.</returns>
+    public static async Task<PublishedChart> PrepareAsync(
+        string environment,
+        CancellationToken cancellationToken
+    )
+        => await ExecuteAsync("do", "prepare-kener-kubernetes", environment, cancellationToken);
+
+    /// <summary>
+    /// Executes an Aspire operation that renders deployment artifacts without invoking Helm deployment.
+    /// </summary>
+    /// <param name="command">The Aspire command to execute.</param>
+    /// <param name="step">The optional named pipeline step for the command.</param>
+    /// <param name="environment">The AppHost deployment environment.</param>
+    /// <param name="cancellationToken">The test cancellation token.</param>
+    /// <returns>The generated chart, including non-secret diagnostic output.</returns>
+    private static async Task<PublishedChart> ExecuteAsync(
+        string command,
+        string? step,
+        string environment,
+        CancellationToken cancellationToken
+    )
     {
         var repositoryRoot = FindRepositoryRoot();
         var outputDirectory = Path.Combine(
@@ -42,7 +70,11 @@ internal static partial class AspirePublishFixture
         processStartInfo.ArgumentList.Add("tool");
         processStartInfo.ArgumentList.Add("run");
         processStartInfo.ArgumentList.Add("aspire");
-        processStartInfo.ArgumentList.Add("publish");
+        processStartInfo.ArgumentList.Add(command);
+        if (step is not null)
+        {
+            processStartInfo.ArgumentList.Add(step);
+        }
         processStartInfo.ArgumentList.Add("--apphost");
         processStartInfo.ArgumentList.Add(appHostProject);
         processStartInfo.ArgumentList.Add("--environment");

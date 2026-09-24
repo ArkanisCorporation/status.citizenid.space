@@ -47,7 +47,7 @@ if (isKubernetesDeployment)
     var smtpPassword = builder.AddParameter("smtp-password", true);
 
     var redis = builder
-        .AddRedis("kener-redis", password: redisPassword)
+        .AddRedis("kener-redis")
         .WithImageTag("8-alpine")
         .WithNewKubernetesPersistentVolumeClaim(
             "data",
@@ -60,14 +60,14 @@ if (isKubernetesDeployment)
                     .WithStorageClass("longhorn-ext4-r2")
         )
         .PublishAsKubernetesService(ConfigureRedis)
-        .WithComputeEnvironment(kubernetes);
+        .WithComputeEnvironment(kubernetes)
+        .WithKubernetesExternalSecretProjection(projection => projection
+            .MapParameter("REDIS_PASSWORD", redisPassword));
 
     var kener = builder
         .AddContainer("kener", "rajnandan1/kener", "v4.1.5-alpine")
         .WithHttpEndpoint(name: "http", targetPort: 3000)
         .WithExternalHttpEndpoints()
-        .WithEnvironment("KENER_SECRET_KEY", kenerSecretKey)
-        .WithEnvironment("REDIS_PASSWORD", redisPassword)
         .WithEnvironment("DATABASE_POOL_MAX", "5")
         .WithEnvironment("DATABASE_WORKER_POOL_MAX", "3")
         .WithEnvironment("SMTP_HOST", "smtp.purelymail.com")
@@ -121,9 +121,26 @@ if (isKubernetesDeployment)
             "kener-ingress",
             ingress => ingress.WithConfigurationFrom(builder.Configuration)
         )
-        .WithComputeEnvironment(kubernetes);
+        .WithComputeEnvironment(kubernetes)
+        .WithKubernetesExternalSecretProjection(projection => projection
+            .MapParameter("KENER_SECRET_KEY", kenerSecretKey)
+            .MapParameter("REDIS_PASSWORD", redisPassword));
 
-    kubernetes.WithExternalSecrets(ExternalSecretsOptions.FromConfiguration(builder.Configuration));
+    var externalSecretsOptions = ExternalSecretsOptions.FromConfiguration(builder.Configuration);
+    kubernetes.WithExternalSecrets(secrets => secrets
+        .WithSecretStore(externalSecretsOptions.SecretStore)
+        .WithParameterSource(kenerSecretKey, source => source
+            .UsePasswordGenerator(password => password
+                .WithLength(64)
+                .WithDigits(8)
+                .WithSymbols(8)
+                .CreatedOnce()))
+        .WithParameterSource(redisPassword, source => source
+            .UsePasswordGenerator(password => password
+                .WithLength(32)
+                .WithDigits(4)
+                .WithSymbols(4)
+                .CreatedOnce())));
 }
 else
 {
@@ -141,6 +158,9 @@ static void ConfigureRedis(KubernetesResource resource)
 
     var container = statefulSet.Spec.Template.Spec.Containers.Single();
     statefulSet.Spec.Template.Spec.AutomountServiceAccountToken = false;
+    container.Env.Add(new EnvVarV1 { Name = "REDIS_PASSWORD" });
+    container.Args.Add("--requirepass");
+    container.Args.Add("$(REDIS_PASSWORD)");
     container.Args.Add("--appendonly");
     container.Args.Add("yes");
     container.Args.Add("--appendfsync");
@@ -179,6 +199,8 @@ static void ConfigureKener(KubernetesResource resource)
     deployment.WithPreferredPodAppComponentAntiAffinity("kubernetes.io/hostname", 50);
 
     var container = deployment.Spec.Template.Spec.Containers.Single();
+    container.Env.Add(new EnvVarV1 { Name = "KENER_SECRET_KEY" });
+    container.Env.Add(new EnvVarV1 { Name = "REDIS_PASSWORD" });
     container.Env.Add(
         new EnvVarV1
         {
