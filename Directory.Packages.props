@@ -7,20 +7,16 @@
     <ItemGroup>
         <PackageVersion
             Include="Arkanis.Aspire.Hosting.Extensions.1Password"
-            Version="2.1.0-dev.1"
-        />
+            Version="2.1.0-dev.1" />
         <PackageVersion
             Include="Arkanis.Aspire.Hosting.Extensions.Kubernetes"
-            Version="1.0.0-dev.20"
-        />
+            Version="1.0.0-dev.20" />
         <PackageVersion
             Include="Arkanis.Aspire.Hosting.Extensions.Kubernetes.CloudNativePostgres"
-            Version="1.0.0-dev.20"
-        />
+            Version="1.0.0-dev.20" />
         <PackageVersion
             Include="Arkanis.Aspire.Hosting.Extensions.Kubernetes.ExternalSecrets"
-            Version="1.0.0-dev.20"
-        />
+            Version="1.0.0-dev.20" />
         <PackageVersion Include="Arkanis.Common.Hosting" Version="1.0.0-dev.1" />
         <PackageVersion Include="Aspire.Hosting.AppHost" Version="13.5.4" />
         <PackageVersion Include="Aspire.Hosting.Kubernetes" Version="13.5.4-preview.1.26464.4" />

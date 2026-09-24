@@ -1,4 +1,4 @@
-﻿using Aspire.Hosting.Kubernetes.Resources;
+using Aspire.Hosting.Kubernetes.Resources;
 
 /// <summary>
 /// Represents the required subset of the policy/v1 PodDisruptionBudget specification.

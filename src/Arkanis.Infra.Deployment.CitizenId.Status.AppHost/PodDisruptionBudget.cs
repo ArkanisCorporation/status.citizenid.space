@@ -1,4 +1,4 @@
-﻿using Aspire.Hosting.Kubernetes.Resources;
+using Aspire.Hosting.Kubernetes.Resources;
 
 /// <summary>
 /// Represents the policy/v1 PodDisruptionBudget emitted with the Kener Deployment.
@@ -9,7 +9,9 @@ internal sealed class PodDisruptionBudget : BaseKubernetesResource
     /// Initializes the Kubernetes resource identity.
     /// </summary>
     public PodDisruptionBudget()
-        : base("policy/v1", "PodDisruptionBudget") { }
+        : base("policy/v1", "PodDisruptionBudget")
+    {
+    }
 
     /// <summary>
     /// Gets or initializes the PodDisruptionBudget specification.

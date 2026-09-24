@@ -19,15 +19,13 @@ if (isKubernetesDeployment)
 {
     builder.Configuration.AddJsonFile(
         $"appsettings.{builder.Environment.EnvironmentName.Replace('-', '.')}.json",
-        optional: false,
-        reloadOnChange: false
+        false,
+        false
     );
 
     var kubernetesNamespace =
         builder.Configuration["Kubernetes:Namespace"]
-        ?? throw new InvalidOperationException(
-            "Kubernetes deployment configuration must define Kubernetes:Namespace."
-        );
+        ?? throw new InvalidOperationException("Kubernetes deployment configuration must define Kubernetes:Namespace.");
 
     var kubernetes = builder
         .AddKubernetesEnvironment("kener-kubernetes")
@@ -43,10 +41,10 @@ if (isKubernetesDeployment)
                     $"{{{{ `postgresql://{{{{ .username | urlquery }}}}:{{{{ .password | urlquery }}}}@{{{{ .host }}}}:{{{{ .port }}}}/{annotation.Credentials.DatabaseName}` }}}}"
                 )
         );
-    var redisPassword = builder.AddParameter("redis-password", secret: true);
-    var kenerSecretKey = builder.AddParameter("kener-secret-key", secret: true);
-    var smtpUsername = builder.AddParameter("smtp-username", secret: true);
-    var smtpPassword = builder.AddParameter("smtp-password", secret: true);
+    var redisPassword = builder.AddParameter("redis-password", true);
+    var kenerSecretKey = builder.AddParameter("kener-secret-key", true);
+    var smtpUsername = builder.AddParameter("smtp-username", true);
+    var smtpPassword = builder.AddParameter("smtp-password", true);
 
     var redis = builder
         .AddRedis("kener-redis", password: redisPassword)
@@ -81,9 +79,7 @@ if (isKubernetesDeployment)
         .WithEnvironment(
             "ORIGIN",
             builder.Configuration["Kener:Origin"]
-                ?? throw new InvalidOperationException(
-                    "Kubernetes deployment configuration must define Kener:Origin."
-                )
+            ?? throw new InvalidOperationException("Kubernetes deployment configuration must define Kener:Origin.")
         )
         .WithHttpHealthCheck("/healthcheck")
         .AddAllHealthCheckProbes(
@@ -140,9 +136,7 @@ static void ConfigureRedis(KubernetesResource resource)
 {
     if (resource.Workload is not StatefulSet statefulSet)
     {
-        throw new InvalidOperationException(
-            "The Kener Redis resource must publish as a StatefulSet."
-        );
+        throw new InvalidOperationException("The Kener Redis resource must publish as a StatefulSet.");
     }
 
     var container = statefulSet.Spec.Template.Spec.Containers.Single();
@@ -153,11 +147,19 @@ static void ConfigureRedis(KubernetesResource resource)
     container.Args.Add("everysec");
     container.Resources = new ResourceRequirementsV1
     {
-        Requests = { ["cpu"] = "100m", ["memory"] = "256Mi" },
-        Limits = { ["cpu"] = "500m", ["memory"] = "512Mi" },
+        Requests =
+        {
+            ["cpu"] = "100m",
+            ["memory"] = "256Mi",
+        },
+        Limits =
+        {
+            ["cpu"] = "500m",
+            ["memory"] = "512Mi",
+        },
     };
-    container.LivenessProbe = CreateRedisProbe(initialDelaySeconds: 10, failureThreshold: 3);
-    container.ReadinessProbe = CreateRedisProbe(initialDelaySeconds: 0, failureThreshold: 3);
+    container.LivenessProbe = CreateRedisProbe(10, 3);
+    container.ReadinessProbe = CreateRedisProbe(0, 3);
 }
 
 static void ConfigureKener(KubernetesResource resource)
@@ -178,12 +180,24 @@ static void ConfigureKener(KubernetesResource resource)
 
     var container = deployment.Spec.Template.Spec.Containers.Single();
     container.Env.Add(
-        new EnvVarV1 { Name = "REDIS_URL", Value = "redis://:$(REDIS_PASSWORD)@kener-redis:6379" }
+        new EnvVarV1
+        {
+            Name = "REDIS_URL",
+            Value = "redis://:$(REDIS_PASSWORD)@kener-redis:6379",
+        }
     );
     container.Resources = new ResourceRequirementsV1
     {
-        Requests = { ["cpu"] = "1", ["memory"] = "1Gi" },
-        Limits = { ["cpu"] = "2", ["memory"] = "2Gi" },
+        Requests =
+        {
+            ["cpu"] = "1",
+            ["memory"] = "1Gi",
+        },
+        Limits =
+        {
+            ["cpu"] = "2",
+            ["memory"] = "2Gi",
+        },
     };
     SetHealthCheckPath(container.LivenessProbe);
     SetHealthCheckPath(container.ReadinessProbe);
@@ -195,17 +209,26 @@ static void ConfigureKener(KubernetesResource resource)
         new PodDisruptionBudget
         {
             Metadata = new ObjectMetaV1 { Name = "kener-pdb" },
-            Spec = new PodDisruptionBudgetSpec { MinAvailable = 1, Selector = selector },
+            Spec = new PodDisruptionBudgetSpec
+            {
+                MinAvailable = 1,
+                Selector = selector,
+            },
         }
     );
 }
 
-static ProbeV1 CreateRedisProbe(int initialDelaySeconds, int failureThreshold) =>
-    new()
+static ProbeV1 CreateRedisProbe(int initialDelaySeconds, int failureThreshold)
+    => new()
     {
         Exec = new ExecActionV1
         {
-            Command = { "sh", "-c", "redis-cli --no-auth-warning -a \"$REDIS_PASSWORD\" ping" },
+            Command =
+            {
+                "sh",
+                "-c",
+                "redis-cli --no-auth-warning -a \"$REDIS_PASSWORD\" ping",
+            },
         },
         InitialDelaySeconds = initialDelaySeconds,
         PeriodSeconds = 10,

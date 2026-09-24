@@ -84,13 +84,11 @@ internal static partial class AspirePublishFixture
             }
         }
 
-        throw new DirectoryNotFoundException(
-            "Could not locate the repository root containing Arkanis.Infra.Deployment.CitizenId.Status.slnx."
-        );
+        throw new DirectoryNotFoundException("Could not locate the repository root containing Arkanis.Infra.Deployment.CitizenId.Status.slnx.");
     }
 
-    private static string Redact(string output) =>
-        OnePasswordReference().Replace(output, "op://[redacted]");
+    private static string Redact(string output)
+        => OnePasswordReference().Replace(output, "op://[redacted]");
 
     [GeneratedRegex("op://[^\\s]+", RegexOptions.CultureInvariant)]
     private static partial Regex OnePasswordReference();
@@ -129,9 +127,7 @@ internal sealed class PublishedChart(string outputDirectory, int exitCode, strin
             .Where(static path => Path.GetExtension(path) is ".yaml" or ".yml")
             .Order(StringComparer.Ordinal)
             .ToArray();
-        var artifacts = await Task.WhenAll(
-            artifactPaths.Select(path => File.ReadAllTextAsync(path, cancellationToken))
-        );
+        var artifacts = await Task.WhenAll(artifactPaths.Select(path => File.ReadAllTextAsync(path, cancellationToken)));
 
         return string.Join(Environment.NewLine, artifacts);
     }
@@ -141,7 +137,7 @@ internal sealed class PublishedChart(string outputDirectory, int exitCode, strin
     {
         if (Directory.Exists(outputDirectory))
         {
-            Directory.Delete(outputDirectory, recursive: true);
+            Directory.Delete(outputDirectory, true);
         }
 
         return ValueTask.CompletedTask;

@@ -122,9 +122,7 @@ public sealed class KenerPublishTests
         using var document = JsonDocument.Parse(File.ReadAllText(configurationPath));
 
         return document.RootElement.GetProperty("Kubernetes").GetProperty("Namespace").GetString()
-            ?? throw new InvalidOperationException(
-                $"The deployment configuration '{configurationPath}' does not define Kubernetes:Namespace."
-            );
+               ?? throw new InvalidOperationException($"The deployment configuration '{configurationPath}' does not define Kubernetes:Namespace.");
     }
 
     private static DirectoryInfo FindRepositoryRoot()
@@ -148,8 +146,6 @@ public sealed class KenerPublishTests
             }
         }
 
-        throw new DirectoryNotFoundException(
-            "Could not locate the repository root containing Arkanis.Infra.Deployment.CitizenId.Status.slnx."
-        );
+        throw new DirectoryNotFoundException("Could not locate the repository root containing Arkanis.Infra.Deployment.CitizenId.Status.slnx.");
     }
 }

@@ -38,8 +38,8 @@
     </PropertyGroup>
 
     <ItemGroup>
-        <InternalsVisibleTo Include="$(PackageId).UnitTests"/>
-        <InternalsVisibleTo Include="$(PackageId).IntegrationTests"/>
+        <InternalsVisibleTo Include="$(PackageId).UnitTests" />
+        <InternalsVisibleTo Include="$(PackageId).IntegrationTests" />
     </ItemGroup>
 
     <ItemGroup>
