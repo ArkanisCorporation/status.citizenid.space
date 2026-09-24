@@ -62,7 +62,8 @@ if (isKubernetesDeployment)
         .PublishAsKubernetesService(ConfigureRedis)
         .WithComputeEnvironment(kubernetes)
         .WithKubernetesExternalSecretProjection(projection => projection
-            .MapParameter("REDIS_PASSWORD", redisPassword));
+            .MapParameter("REDIS_PASSWORD", redisPassword)
+        );
 
     var kener = builder
         .AddContainer("kener", "rajnandan1/kener", "v4.1.5-alpine")
@@ -124,23 +125,33 @@ if (isKubernetesDeployment)
         .WithComputeEnvironment(kubernetes)
         .WithKubernetesExternalSecretProjection(projection => projection
             .MapParameter("KENER_SECRET_KEY", kenerSecretKey)
-            .MapParameter("REDIS_PASSWORD", redisPassword));
+            .MapParameter("REDIS_PASSWORD", redisPassword)
+        );
 
     var externalSecretsOptions = ExternalSecretsOptions.FromConfiguration(builder.Configuration);
     kubernetes.WithExternalSecrets(secrets => secrets
         .WithSecretStore(externalSecretsOptions.SecretStore)
-        .WithParameterSource(kenerSecretKey, source => source
-            .UsePasswordGenerator(password => password
-                .WithLength(64)
-                .WithDigits(8)
-                .WithSymbols(8)
-                .CreatedOnce()))
-        .WithParameterSource(redisPassword, source => source
-            .UsePasswordGenerator(password => password
-                .WithLength(32)
-                .WithDigits(4)
-                .WithSymbols(4)
-                .CreatedOnce())));
+        .WithParameterSource(
+            kenerSecretKey,
+            source => source
+                .UsePasswordGenerator(password => password
+                    .WithLength(64)
+                    .WithDigits(8)
+                    .WithSymbols(8)
+                    .CreatedOnce()
+                )
+        )
+        .WithParameterSource(
+            redisPassword,
+            source => source
+                .UsePasswordGenerator(password => password
+                    .WithLength(32)
+                    .WithDigits(4)
+                    .WithSymbols(4)
+                    .CreatedOnce()
+                )
+        )
+    );
 }
 else
 {

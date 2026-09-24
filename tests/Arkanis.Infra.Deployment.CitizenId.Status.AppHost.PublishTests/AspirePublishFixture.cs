@@ -21,16 +21,16 @@ internal static partial class AspirePublishFixture
         => await ExecuteAsync("publish", null, environment, cancellationToken);
 
     /// <summary>
-    /// Executes the non-mutating Kubernetes preparation step for the supplied deployment environment.
+    /// Executes the non-mutating External Secrets emission step for the supplied deployment environment.
     /// </summary>
     /// <param name="environment">The AppHost deployment environment.</param>
     /// <param name="cancellationToken">The test cancellation token.</param>
     /// <returns>The generated chart, including non-secret diagnostic output.</returns>
-    public static async Task<PublishedChart> PrepareAsync(
+    public static async Task<PublishedChart> EmitExternalSecretsAsync(
         string environment,
         CancellationToken cancellationToken
     )
-        => await ExecuteAsync("do", "prepare-kener-kubernetes", environment, cancellationToken);
+        => await ExecuteAsync("do", "emit-externalsecrets-kener-kubernetes", environment, cancellationToken);
 
     /// <summary>
     /// Executes an Aspire operation that renders deployment artifacts without invoking Helm deployment.
@@ -75,6 +75,7 @@ internal static partial class AspirePublishFixture
         {
             processStartInfo.ArgumentList.Add(step);
         }
+
         processStartInfo.ArgumentList.Add("--apphost");
         processStartInfo.ArgumentList.Add(appHostProject);
         processStartInfo.ArgumentList.Add("--environment");

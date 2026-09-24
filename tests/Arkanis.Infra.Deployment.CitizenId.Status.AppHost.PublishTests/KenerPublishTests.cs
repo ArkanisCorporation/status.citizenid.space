@@ -8,15 +8,15 @@ using System.Text.Json;
 public sealed class KenerPublishTests
 {
     /// <summary>
-    /// Verifies that non-mutating Kubernetes preparation resolves the generated External Secrets parameters.
+    /// Verifies that External Secrets emission resolves the generated password parameters.
     /// </summary>
     /// <param name="environment">The AppHost deployment environment.</param>
     [Theory]
     [InlineData("Kubernetes-Production")]
     [InlineData("Kubernetes-Staging")]
-    public async Task Prepare_materializes_generated_External_Secrets_parameters(string environment)
+    public async Task External_Secrets_emission_materializes_generated_password_parameters(string environment)
     {
-        await using var chart = await AspirePublishFixture.PrepareAsync(
+        await using var chart = await AspirePublishFixture.EmitExternalSecretsAsync(
             environment,
             TestContext.Current.CancellationToken
         );
