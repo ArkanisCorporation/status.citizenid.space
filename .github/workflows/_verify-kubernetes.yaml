@@ -1,0 +1,42 @@
+# Reusable adapter for non-mutating validation of the selected Kubernetes deployment target.
+name: Verify Kubernetes Deployment
+
+permissions: {}
+
+on:
+  workflow_call:
+    inputs:
+      runner:
+        description: "Runner pool with Kubernetes tooling"
+        required: false
+        type: string
+        default: arkanis-runners
+      target:
+        description: "Deployment target: staging or production"
+        required: true
+        type: string
+
+jobs:
+  staging:
+    if: ${{ inputs.target == 'staging' }}
+    uses: ArkanisCorporation/ci/.github/workflows/wf-verify-deploy-k8s-aspire.yml@v1
+    permissions:
+      contents: read
+    with:
+      runs-on: ${{ inputs.runner }}
+      runs-on-self-hosted: ${{ inputs.runner != 'ubuntu-latest' }}
+      aspire-environment: Kubernetes-Staging
+      kubernetes-namespace: citizenid-status-staging
+      apphost-project: src/Arkanis.Infra.Deployment.CitizenId.Status.AppHost/Arkanis.Infra.Deployment.CitizenId.Status.AppHost.csproj
+
+  production:
+    if: ${{ inputs.target == 'production' }}
+    uses: ArkanisCorporation/ci/.github/workflows/wf-verify-deploy-k8s-aspire.yml@v1
+    permissions:
+      contents: read
+    with:
+      runs-on: ${{ inputs.runner }}
+      runs-on-self-hosted: ${{ inputs.runner != 'ubuntu-latest' }}
+      aspire-environment: Kubernetes-Production
+      kubernetes-namespace: citizenid-status-production
+      apphost-project: src/Arkanis.Infra.Deployment.CitizenId.Status.AppHost/Arkanis.Infra.Deployment.CitizenId.Status.AppHost.csproj

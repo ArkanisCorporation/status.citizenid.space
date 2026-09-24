@@ -1,0 +1,74 @@
+# Manual production promotion from an immutable stable release tag.
+name: Deploy Production
+
+run-name: Deploy ${{ inputs.release-tag }} to production
+
+permissions: {}
+
+on:
+  workflow_dispatch:
+    inputs:
+      release-tag:
+        description: "Stable release tag selected as the workflow ref, for example v1.2.3"
+        required: true
+        type: string
+      runner:
+        description: "Runner pool with Kubernetes cluster access"
+        required: false
+        type: choice
+        options:
+          - arkanis-runners
+          - daedalus
+          - ubuntu-latest
+        default: arkanis-runners
+
+jobs:
+  validate-release-tag:
+    name: Validate Immutable Stable Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - name: Checkout selected release tag
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Validate selected release tag
+        env:
+          RELEASE_TAG: ${{ inputs.release-tag }}
+          SELECTED_REF_NAME: ${{ github.ref_name }}
+          SELECTED_REF_TYPE: ${{ github.ref_type }}
+        run: |
+          if [[ "$SELECTED_REF_TYPE" != "tag" ]]; then
+            echo "Select the immutable release tag as the workflow ref before deploying production." >&2
+            exit 2
+          fi
+
+          if [[ ! "$RELEASE_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Production requires a stable vMAJOR.MINOR.PATCH release tag." >&2
+            exit 2
+          fi
+
+          if [[ "$RELEASE_TAG" != "$SELECTED_REF_NAME" ]]; then
+            echo "The release-tag input must exactly match the selected workflow ref." >&2
+            exit 2
+          fi
+
+          git rev-parse --verify "refs/tags/$RELEASE_TAG^{commit}" >/dev/null
+
+  deploy:
+    name: Deploy Production
+    needs: validate-release-tag
+    uses: ./.github/workflows/_deploy-kubernetes.yaml
+    permissions:
+      contents: read
+      packages: write
+    secrets: inherit
+    with:
+      runner: ${{ inputs.runner }}
+      target: production

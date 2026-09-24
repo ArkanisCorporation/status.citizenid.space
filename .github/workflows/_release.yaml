@@ -1,0 +1,39 @@
+# Reusable adapter for publishing the deployment-model release metadata.
+name: Semantic Release
+
+permissions: {}
+
+on:
+  workflow_call:
+    inputs:
+      runner:
+        description: "Runner pool"
+        required: false
+        type: string
+        default: daedalus
+    outputs:
+      new-version:
+        description: "Published semantic-release version"
+        value: ${{ jobs.release.outputs.new-version }}
+      new-tag:
+        description: "Published semantic-release tag"
+        value: ${{ jobs.release.outputs.new-tag }}
+      new-channel:
+        description: "Published semantic-release channel"
+        value: ${{ jobs.release.outputs.new-channel }}
+      release-published:
+        description: "Whether semantic-release published a release"
+        value: ${{ jobs.release.outputs.release-published }}
+
+jobs:
+  release:
+    name: Publish
+    uses: ArkanisCorporation/ci/.github/workflows/wf-release-semantic.yml@v1
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+    with:
+      runs-on: ${{ inputs.runner }}
+      runs-on-self-hosted: ${{ inputs.runner != 'ubuntu-latest' }}
+      environment-name: release

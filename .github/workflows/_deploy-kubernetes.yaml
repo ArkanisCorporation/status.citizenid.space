@@ -1,0 +1,50 @@
+# Reusable adapter for deploying the selected Kubernetes target through Aspire.
+name: Deploy Kubernetes
+
+permissions: {}
+
+on:
+  workflow_call:
+    inputs:
+      runner:
+        description: "Runner pool with Kubernetes cluster access"
+        required: false
+        type: string
+        default: arkanis-runners
+      target:
+        description: "Deployment target: staging or production"
+        required: true
+        type: string
+
+jobs:
+  staging:
+    if: ${{ inputs.target == 'staging' }}
+    uses: ArkanisCorporation/ci/.github/workflows/wf-deploy-k8s-aspire.yml@v1
+    permissions:
+      contents: read
+      packages: write
+    secrets: inherit
+    with:
+      runs-on: ${{ inputs.runner }}
+      runs-on-self-hosted: ${{ inputs.runner != 'ubuntu-latest' }}
+      environment-name: Kubernetes-Staging
+      aspire-environment: Kubernetes-Staging
+      kubernetes-namespace: citizenid-status-staging
+      apphost-project: src/Arkanis.Infra.Deployment.CitizenId.Status.AppHost/Arkanis.Infra.Deployment.CitizenId.Status.AppHost.csproj
+      output-path: artifacts/kener-staging
+
+  production:
+    if: ${{ inputs.target == 'production' }}
+    uses: ArkanisCorporation/ci/.github/workflows/wf-deploy-k8s-aspire.yml@v1
+    permissions:
+      contents: read
+      packages: write
+    secrets: inherit
+    with:
+      runs-on: ${{ inputs.runner }}
+      runs-on-self-hosted: ${{ inputs.runner != 'ubuntu-latest' }}
+      environment-name: Kubernetes-Production
+      aspire-environment: Kubernetes-Production
+      kubernetes-namespace: citizenid-status-production
+      apphost-project: src/Arkanis.Infra.Deployment.CitizenId.Status.AppHost/Arkanis.Infra.Deployment.CitizenId.Status.AppHost.csproj
+      output-path: artifacts/kener-production

@@ -59,7 +59,16 @@ Kubernetes resource names and environment identities are stable deployment contr
 ## GitHub Actions
 
 The workflow runs workflow linting, the shared .NET test and format contracts, a local complexity build, and semantic-release dry-run verification.
-It does not publish a container image, NuGet package, Helm release, or deployment.
+Candidate releases additionally validate the selected Kubernetes target before semantic-release creates the Git tag and GitHub release.
+Published staging releases from `main` deploy through Aspire to `Kubernetes-Staging`.
+Production promotion is manual-only through the `Deploy Production` workflow, which must run from the exact stable `vMAJOR.MINOR.PATCH` tag selected for deployment.
+
+This repository does not publish a container image or NuGet package.
+The deployment retains the independently pinned Kener and Redis image tags from the AppHost; a deployment-model release tag is not passed as a container image tag.
+
+Configure the `release`, `Kubernetes-Staging`, and `Kubernetes-Production` GitHub Environments before the first delivery run.
+The deployment environments must provide `KUBE_CONFIG` or use a selected runner whose current Kubernetes context has access to the target cluster.
+Protect `Kubernetes-Production` with the required reviewers and deploy only from stable release tags.
 
 See [GitHub Actions](docs/github-actions.md) for runner trust, permissions, and local validation details.
 

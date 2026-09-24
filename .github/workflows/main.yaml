@@ -1,4 +1,4 @@
-# Entry workflow for shared .NET validation and release artifact dry runs.
+# Entry workflow for validation, semantic release, and staging delivery.
 name: Test & Validate (.NET)
 
 permissions: {}
@@ -38,15 +38,67 @@ jobs:
     uses: ./.github/workflows/_test.yaml
     permissions:
       contents: read
+      pull-requests: write
     with:
       runner: ${{ github.event_name == 'pull_request' && 'ubuntu-latest' || inputs.runner || vars.RUNNER_DEFAULT || 'daedalus' }}
 
   release-dry-run:
     name: "Dry Run: Release"
     if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository }}
-    needs: test
     uses: ./.github/workflows/_verify-release.yaml
     permissions:
       contents: write
     with:
       runner: ${{ github.event_name == 'pull_request' && 'ubuntu-latest' || inputs.runner || vars.RUNNER_DEFAULT || 'daedalus' }}
+
+  deployment-preflight:
+    name: "Dry Run: Kubernetes Deployment"
+    needs: release-dry-run
+    if: >-
+      ${{
+        github.event_name == 'push' &&
+        (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/release/stable') &&
+        needs.release-dry-run.outputs.new-version != ''
+      }}
+    uses: ./.github/workflows/_verify-kubernetes.yaml
+    permissions:
+      contents: read
+    with:
+      runner: ${{ inputs.runner || vars.RUNNER_KUBERNETES || 'arkanis-runners' }}
+      target: ${{ github.ref == 'refs/heads/main' && 'staging' || 'production' }}
+
+  release:
+    name: Release
+    needs: [ lint, test, release-dry-run, deployment-preflight ]
+    if: >-
+      ${{
+        github.event_name == 'push' &&
+        (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/release/stable') &&
+        needs.release-dry-run.outputs.new-version != ''
+      }}
+    uses: ./.github/workflows/_release.yaml
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+    with:
+      runner: ${{ inputs.runner || vars.RUNNER_DEFAULT || 'daedalus' }}
+
+  deploy-staging:
+    name: Deploy Staging
+    needs: release
+    if: >-
+      ${{
+        github.event_name == 'push' &&
+        github.ref == 'refs/heads/main' &&
+        needs.release.outputs.release-published == 'true' &&
+        needs.release.outputs.new-channel == 'staging'
+      }}
+    uses: ./.github/workflows/_deploy-kubernetes.yaml
+    permissions:
+      contents: read
+      packages: write
+    secrets: inherit
+    with:
+      runner: ${{ inputs.runner || vars.RUNNER_KUBERNETES || 'arkanis-runners' }}
+      target: staging

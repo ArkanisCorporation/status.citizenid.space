@@ -37,6 +37,10 @@ jobs:
     uses: ArkanisCorporation/ci/.github/workflows/wf-dotnet-test.yml@v1
     permissions:
       contents: read
+      # The shared test workflow declares this scope even when its PR-comment
+      # input is false. GitHub validates nested-workflow permissions before it
+      # evaluates that input.
+      pull-requests: write
     with:
       runs-on: ${{ inputs.runner }}
       runs-on-self-hosted: ${{ inputs.runner != 'ubuntu-latest' }}
