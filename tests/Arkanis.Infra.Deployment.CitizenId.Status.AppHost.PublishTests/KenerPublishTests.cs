@@ -22,7 +22,7 @@ public sealed class KenerPublishTests
         );
 
         Assert.True(chart.ExitCode == 0, chart.Output);
-        Assert.DoesNotContain("Failed to save parameter redis-password", chart.Output, StringComparison.Ordinal);
+        Assert.DoesNotContain("Failed to save parameter redis-auth", chart.Output, StringComparison.Ordinal);
         Assert.DoesNotContain("Failed to save parameter web-secret-key", chart.Output, StringComparison.Ordinal);
 
         var artifacts = await chart.ReadAllTemplatesAsync(TestContext.Current.CancellationToken);

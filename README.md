@@ -63,7 +63,8 @@ This keeps non-interactive publishing, including the CI artifact tests, determin
 The deployment renders a two-replica web workload with zone-preferred anti-affinity, a PodDisruptionBudget, health probes, explicit CPU and memory resources, and a persistent Redis StatefulSet.
 The workload and Redis service names are `web` and `redis` respectively.
 Redis passwords use only URI-unreserved symbols, so their raw value is valid in Kener's `REDIS_URL` user-info component.
-The Redis password is `CreatedOnce`; rotate it by deleting `ExternalSecret/redis-password-generated-secrets` and `Secret/redis-password-generated-secrets`, deploying the chart again, then rolling out Redis and web.
+The Redis password is `CreatedOnce` and is projected through the `redis-auth-generated-secrets` target Secret.
+To rotate it, change the generated-credential identity, deploy the chart, and then roll out Redis and web.
 
 ## GitHub Actions
 

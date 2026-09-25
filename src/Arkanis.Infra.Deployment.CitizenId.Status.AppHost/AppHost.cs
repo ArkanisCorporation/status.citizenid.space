@@ -43,7 +43,7 @@ if (isKubernetesDeployment)
         );
     // Aspire persists all parameters before ESO materializes generated credentials.
     // These defaults satisfy only that deployment-state contract and are never published into Kubernetes.
-    var redisPassword = builder.AddParameter("redis-password", string.Empty, secret: true);
+    var redisPassword = builder.AddParameter("redis-auth", string.Empty, secret: true);
     var webSecretKey = builder.AddParameter("web-secret-key", string.Empty, secret: true);
     var smtpUsername = builder.AddParameter("smtp-username", true);
     var smtpPassword = builder.AddParameter("smtp-password", true);
