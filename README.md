@@ -1,7 +1,7 @@
 # CitizenId Status Deployment
 
 `Arkanis.Infra.Deployment.CitizenId.Status` generates environment-isolated Kubernetes Helm charts for the CitizenId Kener status service.
-The AppHost declares Kener, CloudNativePG PostgreSQL, Redis persistence, ingress, availability controls, and External Secrets Operator resources.
+The AppHost declares the web workload, CloudNativePG PostgreSQL, Redis persistence, ingress, availability controls, and External Secrets Operator resources.
 
 ## Project Graph
 
@@ -55,13 +55,15 @@ Publishing generates Helm artifacts only.
 It does not create or resolve 1Password items, print secret values, apply Helm resources, or change the Kubernetes cluster.
 The generated chart expects the configured ClusterSecretStores and existing CloudNativePG credentials secret at deployment time.
 The [`postgres-production` infrastructure chart](https://github.com/ArkanisCorporation/Infrastructure/tree/main/kubernetes/infrastructure/postgres-production) provisions the `citizenid-status-production` and `citizenid-status-staging` roles and their matching source Secrets before a Kener deployment consumes them.
-The app-local Kener database ExternalSecret refreshes every minute so it recovers promptly when its independently reconciled source Secret becomes available.
+The app-local web database ExternalSecret refreshes every minute so it recovers promptly when its independently reconciled source Secret becomes available.
 
 The tracked [`aspire.config.json`](aspire.config.json) selects this AppHost and disables default watch mode.
 This keeps non-interactive publishing, including the CI artifact tests, deterministic regardless of a developer or runner's global Aspire CLI setting.
 
-The deployment renders a two-replica Kener workload with zone-preferred anti-affinity, a PodDisruptionBudget, health probes, explicit CPU and memory resources, and a persistent Redis StatefulSet.
-Kubernetes resource names and environment identities are stable deployment contracts and are independent of this repository’s .NET project names.
+The deployment renders a two-replica web workload with zone-preferred anti-affinity, a PodDisruptionBudget, health probes, explicit CPU and memory resources, and a persistent Redis StatefulSet.
+The workload and Redis service names are `web` and `redis` respectively.
+Redis passwords use only URI-unreserved symbols, so their raw value is valid in Kener's `REDIS_URL` user-info component.
+The Redis password is `CreatedOnce`; rotate it by deleting `ExternalSecret/redis-password-generated-secrets` and `Secret/redis-password-generated-secrets`, deploying the chart again, then rolling out Redis and web.
 
 ## GitHub Actions
 

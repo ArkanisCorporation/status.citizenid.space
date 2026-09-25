@@ -44,16 +44,16 @@ if (isKubernetesDeployment)
     // Aspire persists all parameters before ESO materializes generated credentials.
     // These defaults satisfy only that deployment-state contract and are never published into Kubernetes.
     var redisPassword = builder.AddParameter("redis-password", string.Empty, secret: true);
-    var kenerSecretKey = builder.AddParameter("kener-secret-key", string.Empty, secret: true);
+    var webSecretKey = builder.AddParameter("web-secret-key", string.Empty, secret: true);
     var smtpUsername = builder.AddParameter("smtp-username", true);
     var smtpPassword = builder.AddParameter("smtp-password", true);
 
     var redis = builder
-        .AddRedis("kener-redis")
+        .AddRedis("redis", password: redisPassword)
         .WithImageTag("8-alpine")
         .WithNewKubernetesPersistentVolumeClaim(
             "data",
-            "kener-redis-data",
+            "redis-data",
             "/data",
             claim =>
                 claim
@@ -112,25 +112,25 @@ if (isKubernetesDeployment)
         .PublishAsKubernetesService(ConfigureWeb)
         .WithKubernetesConnectionString(
             database,
-            "KenerDatabase",
+            "WebDatabase",
             credentials =>
                 credentials.WithConnectionStringTemplate(annotation =>
                     $"{{{{ `postgresql://{{{{ .username | urlquery }}}}:{{{{ .password | urlquery }}}}@{{{{ .host }}}}:{{{{ .port }}}}/{annotation.Credentials.DatabaseName}` }}}}"
                 ),
             secretReference =>
             {
-                secretReference.SecretName = "kener-database";
+                secretReference.SecretName = "web-database";
                 secretReference.SecretKey = "DATABASE_URL";
                 secretReference.EnvironmentVariableName = "DATABASE_URL";
             }
         )
         .WithKubernetesIngress(
-            "kener-ingress",
+            "web-ingress",
             ingress => ingress.WithConfigurationFrom(builder.Configuration)
         )
         .WithComputeEnvironment(kubernetes)
         .WithKubernetesExternalSecretProjection(projection => projection
-            .MapParameter("KENER_SECRET_KEY", kenerSecretKey)
+            .MapParameter("KENER_SECRET_KEY", webSecretKey)
             .MapParameter("REDIS_PASSWORD", redisPassword)
         );
 
@@ -138,7 +138,7 @@ if (isKubernetesDeployment)
     kubernetes.WithExternalSecrets(secrets => secrets
         .WithSecretStore(externalSecretsOptions.SecretStore)
         .WithParameterSource(
-            kenerSecretKey,
+            webSecretKey,
             source => source
                 .UsePasswordGenerator(password => password
                     .WithLength(64)
@@ -154,6 +154,7 @@ if (isKubernetesDeployment)
                     .WithLength(32)
                     .WithDigits(4)
                     .WithSymbols(4)
+                    .WithSymbolCharacters("-._~")
                     .CreatedOnce()
                 )
         )
@@ -247,7 +248,7 @@ static void ConfigureWeb(KubernetesResource resource)
     resource.AdditionalResources.Add(
         new PodDisruptionBudget
         {
-            Metadata = new ObjectMetaV1 { Name = "kener-pdb" },
+            Metadata = new ObjectMetaV1 { Name = "web-pdb" },
             Spec = new PodDisruptionBudgetSpec
             {
                 MinAvailable = 1,

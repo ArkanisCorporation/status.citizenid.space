@@ -23,7 +23,7 @@ public sealed class KenerPublishTests
 
         Assert.True(chart.ExitCode == 0, chart.Output);
         Assert.DoesNotContain("Failed to save parameter redis-password", chart.Output, StringComparison.Ordinal);
-        Assert.DoesNotContain("Failed to save parameter kener-secret-key", chart.Output, StringComparison.Ordinal);
+        Assert.DoesNotContain("Failed to save parameter web-secret-key", chart.Output, StringComparison.Ordinal);
 
         var artifacts = await chart.ReadAllTemplatesAsync(TestContext.Current.CancellationToken);
 
@@ -111,7 +111,7 @@ public sealed class KenerPublishTests
         Assert.Contains($"owner: {expectedOwner}", artifacts, StringComparison.Ordinal);
         Assert.Contains("name: production", artifacts, StringComparison.Ordinal);
         Assert.Contains($"key: {expectedCredentialsSecret}", artifacts, StringComparison.Ordinal);
-        Assert.Contains("name: kener-database", databaseExternalSecret, StringComparison.Ordinal);
+        Assert.Contains("name: web-database", databaseExternalSecret, StringComparison.Ordinal);
         Assert.Contains("refreshInterval: 1m", databaseExternalSecret, StringComparison.Ordinal);
         Assert.Contains("rajnandan1/kener", artifacts, StringComparison.Ordinal);
         Assert.Contains("postgresql://", artifacts, StringComparison.Ordinal);
@@ -144,7 +144,7 @@ public sealed class KenerPublishTests
         Assert.Contains("maxUnavailable: 0", artifacts, StringComparison.Ordinal);
         Assert.Contains("appendonly", artifacts, StringComparison.Ordinal);
         Assert.Contains("appendfsync", artifacts, StringComparison.Ordinal);
-        Assert.Contains("kener-redis-data", artifacts, StringComparison.Ordinal);
+        Assert.Contains("redis-data", artifacts, StringComparison.Ordinal);
         Assert.Contains("longhorn-ext4-r2", artifacts, StringComparison.Ordinal);
         Assert.Contains("automountServiceAccountToken: false", artifacts, StringComparison.Ordinal);
         Assert.Contains("DATABASE_POOL_MAX", artifacts, StringComparison.Ordinal);
