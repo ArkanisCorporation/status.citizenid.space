@@ -61,14 +61,18 @@ if (isKubernetesDeployment)
                     .WithStorageRequest("2Gi")
                     .WithStorageClass("longhorn-ext4-r2")
         )
-        .PublishAsKubernetesService(ConfigureRedis)
+        .PublishAsKubernetesService(resource =>
+        {
+            resource.Service!.Metadata.Name = "redis";
+            ConfigureRedis(resource);
+        })
         .WithComputeEnvironment(kubernetes)
         .WithKubernetesExternalSecretProjection(projection => projection
             .MapParameter("REDIS_PASSWORD", redisPassword)
         );
 
-    var kener = builder
-        .AddContainer("kener", "rajnandan1/kener", "v4.1.5-alpine")
+    var web = builder
+        .AddContainer("web", "rajnandan1/kener", "v4.1.5-alpine")
         .WithHttpEndpoint(name: "http", targetPort: 3000)
         .WithExternalHttpEndpoints()
         .WithEnvironment("DATABASE_POOL_MAX", "5")
@@ -105,7 +109,7 @@ if (isKubernetesDeployment)
                 FailureThreshold = 3,
             }
         )
-        .PublishAsKubernetesService(ConfigureKener)
+        .PublishAsKubernetesService(ConfigureWeb)
         .WithKubernetesConnectionString(
             database,
             "KenerDatabase",
@@ -195,18 +199,18 @@ static void ConfigureRedis(KubernetesResource resource)
     container.ReadinessProbe = CreateRedisProbe(0, 3);
 }
 
-static void ConfigureKener(KubernetesResource resource)
+static void ConfigureWeb(KubernetesResource resource)
 {
     if (resource.Workload is not Deployment deployment)
     {
-        throw new InvalidOperationException("Kener must publish as a Deployment.");
+        throw new InvalidOperationException("The web application must publish as a Deployment.");
     }
 
     deployment.Spec.Replicas = 2;
     deployment.Spec.Strategy.Type = "RollingUpdate";
     deployment.Spec.Strategy.RollingUpdate.MaxUnavailable = 0;
     deployment.Spec.Strategy.RollingUpdate.MaxSurge = 1;
-    deployment.Spec.Template.Metadata.Labels["app.kubernetes.io/component"] = "kener";
+    deployment.Spec.Template.Metadata.Labels["app.kubernetes.io/component"] = "web";
     deployment.Spec.Template.Spec.AutomountServiceAccountToken = false;
     deployment.WithPreferredPodAppComponentAntiAffinity("topology.kubernetes.io/zone", 100);
     deployment.WithPreferredPodAppComponentAntiAffinity("kubernetes.io/hostname", 50);
@@ -218,7 +222,7 @@ static void ConfigureKener(KubernetesResource resource)
         new EnvVarV1
         {
             Name = "REDIS_URL",
-            Value = "redis://:$(REDIS_PASSWORD)@kener-redis:6379",
+            Value = "redis://:$(REDIS_PASSWORD)@redis:6379",
         }
     );
     container.Resources = new ResourceRequirementsV1
@@ -239,7 +243,7 @@ static void ConfigureKener(KubernetesResource resource)
     SetHealthCheckPath(container.StartupProbe);
 
     var selector = new LabelSelectorV1();
-    selector.MatchLabels["app.kubernetes.io/component"] = "kener";
+    selector.MatchLabels["app.kubernetes.io/component"] = "web";
     resource.AdditionalResources.Add(
         new PodDisruptionBudget
         {
