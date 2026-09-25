@@ -52,19 +52,6 @@ jobs:
       coverage-report-custom-settings: ${{ inputs.coverage_custom_settings }}
       timeout-minutes: 20
 
-  format:
-    name: Format
-    uses: ArkanisCorporation/ci/.github/workflows/wf-dotnet-format.yml@v1
-    permissions:
-      contents: read
-    with:
-      runs-on: ${{ inputs.runner }}
-      runs-on-self-hosted: ${{ inputs.runner != 'ubuntu-latest' }}
-      global-json-file: global.json
-      solution: Arkanis.Infra.Deployment.CitizenId.Status.slnx
-      install-tool: true
-      timeout-minutes: 20
-
   complexity:
     name: Complexity
     runs-on: ${{ inputs.runner }}
