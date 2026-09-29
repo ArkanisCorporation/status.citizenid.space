@@ -29,8 +29,11 @@ Any future workflow that writes coverage results to pull requests requires a sep
 
 ## Service Architecture
 
-`Arkanis.Infra.Deployment.CitizenId.Status.AppHost` is the Aspire deployment model for Kener.
-`Arkanis.Infra.Deployment.CitizenId.Status.AppHost.PublishTests` renders the production and staging Helm charts without applying them.
+`Arkanis.Infra.Deployment.CitizenId.Status.AppHost` owns the Aspire deployment model for Kener.
+`Arkanis.Infra.Deployment.CitizenId.Status.AppHost.PublishTests` renders only synthetic test charts without applying them.
+Publish tests invoke the AppHost only as `Kubernetes-PublishTest` with the fixture under the test project.
+Do not load staging or production settings in any test or add live target names to the publish-test fixture API.
+For staging and production publication, load conventional settings without local overrides and derive the ingress host from `Kener:Origin`.
 Keep the deployment model focused on Kubernetes resources, External Secrets Operator references, and publish-time verification.
 This repository does not own an ASP.NET Core service, a container image, or a NuGet package.
 

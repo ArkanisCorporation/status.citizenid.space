@@ -5,15 +5,20 @@ The AppHost declares the web workload, CloudNativePG PostgreSQL, Redis persisten
 
 ## Project Graph
 
-```text
-Arkanis.Infra.Deployment.CitizenId.Status.AppHost (net10.0)
-└── Arkanis.Infra.Deployment.CitizenId.Status.AppHost.PublishTests (net10.0)
+```mermaid
+flowchart LR
+    PublishTests[Publish tests] --> AppHost[AppHost]
+    PublishTests --> Fixture[Synthetic test fixture]
+    AppHost --> LiveSettings[Staging and production settings]
+    AppHost --> Fixture
 ```
 
-The AppHost is the deployment model.
-The publish tests run the non-mutating `emit-externalsecrets-kener-kubernetes` pipeline step for production and staging and assert the deployment contract without connecting to Kubernetes or 1Password.
+The AppHost defines the Kener Kubernetes resources.
+The publish tests invoke it only as `Kubernetes-PublishTest` and supply one fixture from the test project through `KENER_PUBLISH_TEST_FIXTURE`.
+The fixture contains synthetic identities; the AppHost rejects inherited deployment settings before loading it.
+The tests run the non-mutating `emit-externalsecrets-kener-kubernetes` pipeline step and assert the deployment contract without connecting to Kubernetes or 1Password.
 The step includes parameter processing, Kubernetes chart rendering, and External Secrets emission, but stops before Helm prerequisites and `helm-deploy-kener-kubernetes`.
-The test passes `--clear-cache true` to parameter processing, so cached Aspire deployment-state values cannot hide a missing ESO-generated credential.
+Every test publish passes `--clear-cache true` to parameter processing, so cached Aspire deployment-state values cannot hide a missing ESO-generated credential or supply a live value.
 
 ## Initialize A Checkout
 
@@ -39,12 +44,16 @@ dotnet test tests/Arkanis.Infra.Deployment.CitizenId.Status.AppHost.PublishTests
 ```
 
 The AppHost opts out of package lock generation because its Aspire SDK and publishing graph are operating-system dependent.
+The publish tests use a package lock file.
 
 ## Publish Kener Kubernetes Charts
 
 The AppHost produces one Helm chart for each deployment environment.
 `Kubernetes-Production` targets `citizenid-status-production` at `https://status.citizenid.space`.
 `Kubernetes-Staging` targets `citizenid-status-staging` at `https://status.citizenid.dev`.
+The AppHost accepts staging and production for publication and validates their namespace, origin, database, owner, and credential source identities.
+It loads conventional deployment settings with environment variables last and excludes `appsettings.local.json` from Kubernetes publication.
+`Kener:Origin` also determines the ingress hostname, avoiding a second hostname setting.
 
 ```powershell
 dotnet aspire publish --apphost src/Arkanis.Infra.Deployment.CitizenId.Status.AppHost/Arkanis.Infra.Deployment.CitizenId.Status.AppHost.csproj --environment Kubernetes-Production --output-path artifacts/kener-production --non-interactive
@@ -58,7 +67,7 @@ The [`postgres-production` infrastructure chart](https://github.com/ArkanisCorpo
 The app-local web database ExternalSecret refreshes every minute so it recovers promptly when its independently reconciled source Secret becomes available.
 
 The tracked [`aspire.config.json`](aspire.config.json) selects this AppHost and disables default watch mode.
-This keeps non-interactive publishing, including the CI artifact tests, deterministic regardless of a developer or runner's global Aspire CLI setting.
+This keeps non-interactive AppHost publishing deterministic regardless of a developer or runner's global Aspire CLI setting.
 
 The deployment renders a two-replica web workload with zone-preferred anti-affinity, a PodDisruptionBudget, health probes, explicit CPU and memory resources, and a persistent Redis StatefulSet.
 The workload and Redis service names are `web` and `redis` respectively.
@@ -76,9 +85,10 @@ Production promotion is manual-only through the `Deploy Production` workflow, wh
 This repository does not publish a container image or NuGet package.
 The deployment retains the independently pinned Kener and Redis image tags from the AppHost; a deployment-model release tag is not passed as a container image tag.
 
-Configure the `release`, `Kubernetes-Staging`, and `Kubernetes-Production` GitHub Environments before the first delivery run.
-The deployment environments must provide `KUBE_CONFIG` or use a selected runner whose current Kubernetes context has access to the target cluster.
-Protect `Kubernetes-Production` with the required reviewers and deploy only from stable release tags.
+Configure the `release`, `k8s-staging`, and `k8s-production` GitHub Environments before the first delivery run.
+Ordinary CI jobs use the manual `runner` choice when dispatched and otherwise use `vars.RUNNER_DEFAULT || 'daedalus'`, while Kubernetes verification and deployment jobs remain explicitly pinned to `arkanis-runners`.
+The deployment environments must provide `KUBE_CONFIG` or have the target cluster context available on `arkanis-runners`.
+Protect `k8s-production` with the required reviewers and deploy only from stable release tags.
 
 See [GitHub Actions](docs/github-actions.md) for runner trust, permissions, and local validation details.
 

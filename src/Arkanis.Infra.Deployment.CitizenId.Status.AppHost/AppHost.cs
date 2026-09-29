@@ -2,6 +2,7 @@ using Arkanis.Aspire.Hosting.Extensions._1Password;
 using Arkanis.Aspire.Hosting.Extensions.Kubernetes;
 using Arkanis.Aspire.Hosting.Extensions.Kubernetes.CloudNativePostgres;
 using Arkanis.Aspire.Hosting.Extensions.Kubernetes.ExternalSecrets;
+using Arkanis.Aspire.Hosting.Extensions.Kubernetes.KubernetesConnections;
 using Arkanis.Aspire.Hosting.Extensions.Kubernetes.KubernetesIngresses;
 using Arkanis.Aspire.Hosting.Extensions.Kubernetes.PersistentVolumeClaims;
 using Aspire.Hosting.Kubernetes;
@@ -9,23 +10,36 @@ using Aspire.Hosting.Kubernetes.Resources;
 using Microsoft.Extensions.Configuration;
 
 var builder = DistributedApplication.CreateBuilder(args);
-
-var isKubernetesDeployment = builder.Environment.EnvironmentName.StartsWith(
-    "Kubernetes-",
-    StringComparison.OrdinalIgnoreCase
-);
-
-if (isKubernetesDeployment)
+if (builder.Environment.IsKubernetesDeployment())
 {
-    builder.Configuration.AddJsonFile(
-        $"appsettings.{builder.Environment.EnvironmentName.Replace('-', '.')}.json",
-        false,
-        false
-    );
+    DeploymentConfiguration.ConfigureTarget(builder);
 
-    var kubernetesNamespace =
-        builder.Configuration["Kubernetes:Namespace"]
-        ?? throw new InvalidOperationException("Kubernetes deployment configuration must define Kubernetes:Namespace.");
+    var configuration = builder.Configuration;
+    var kubernetesNamespace = Require(configuration, "Kubernetes:Namespace");
+    var originValue = Require(configuration, "Kener:Origin");
+    if (
+        !Uri.TryCreate(originValue, UriKind.Absolute, out var origin)
+        || origin.Scheme != Uri.UriSchemeHttps
+        || origin.AbsolutePath != "/"
+        || !string.IsNullOrEmpty(origin.Query)
+        || !string.IsNullOrEmpty(origin.Fragment)
+    )
+    {
+        throw new InvalidOperationException(
+            "Kener:Origin must be an HTTPS origin without a path, query, or fragment."
+        );
+    }
+
+    Require(configuration, "Kubernetes:CloudNativePostgres:Resources:database:ClusterName");
+    Require(configuration, "Kubernetes:CloudNativePostgres:Resources:database:DatabaseName");
+    Require(configuration, "Kubernetes:CloudNativePostgres:Resources:database:Owner");
+    Require(
+        configuration,
+        "Kubernetes:CloudNativePostgres:Resources:database:CredentialsSecret:SourceSecretName"
+    );
+    Require(configuration, "Kubernetes:Secrets:SecretStore:Name");
+    Require(configuration, "Parameters:smtp-username");
+    Require(configuration, "Parameters:smtp-password");
 
     var kubernetes = builder
         .AddKubernetesEnvironment("kener-kubernetes")
@@ -36,7 +50,7 @@ if (isKubernetesDeployment)
         .ExcludeFromManifest()
         .WithCloudNativePostgresDatabase(database =>
             database
-                .WithConfigurationFrom(builder.Configuration)
+                .WithConfigurationFrom(configuration)
                 .WithCredentialsConnectionStringTemplate(annotation =>
                     $"{{{{ `postgresql://{{{{ .username | urlquery }}}}:{{{{ .password | urlquery }}}}@{{{{ .host }}}}:{{{{ .port }}}}/{annotation.Credentials.DatabaseName}` }}}}"
                 )
@@ -51,6 +65,7 @@ if (isKubernetesDeployment)
     var redis = builder
         .AddRedis("redis", password: redisPassword)
         .WithImageTag("8-alpine")
+        .WithEnvironment("REDIS_PASSWORD", redisPassword)
         .WithNewKubernetesPersistentVolumeClaim(
             "data",
             "redis-data",
@@ -66,12 +81,9 @@ if (isKubernetesDeployment)
             resource.Service!.Metadata.Name = "redis";
             ConfigureRedis(resource);
         })
-        .WithComputeEnvironment(kubernetes)
-        .WithKubernetesExternalSecretProjection(projection => projection
-            .MapParameter("REDIS_PASSWORD", redisPassword)
-        );
+        .WithComputeEnvironment(kubernetes);
 
-    var web = builder
+    builder
         .AddContainer("web", "rajnandan1/kener", "v4.1.5-alpine")
         .WithHttpEndpoint(name: "http", targetPort: 3000)
         .WithExternalHttpEndpoints()
@@ -83,11 +95,9 @@ if (isKubernetesDeployment)
         .WithEnvironment("SMTP_USER", smtpUsername)
         .WithEnvironment("SMTP_SENDER", smtpUsername)
         .WithEnvironment("SMTP_PASSWORD", smtpPassword)
-        .WithEnvironment(
-            "ORIGIN",
-            builder.Configuration["Kener:Origin"]
-            ?? throw new InvalidOperationException("Kubernetes deployment configuration must define Kener:Origin.")
-        )
+        .WithEnvironment("KENER_SECRET_KEY", webSecretKey)
+        .WithEnvironment("REDIS_PASSWORD", redisPassword)
+        .WithEnvironment("ORIGIN", originValue)
         .WithHttpHealthCheck("/healthcheck")
         .AddAllHealthCheckProbes(
             new ResourceHealthCheckProbeOptions
@@ -113,10 +123,6 @@ if (isKubernetesDeployment)
         .WithKubernetesConnectionString(
             database,
             "WebDatabase",
-            credentials =>
-                credentials.WithConnectionStringTemplate(annotation =>
-                    $"{{{{ `postgresql://{{{{ .username | urlquery }}}}:{{{{ .password | urlquery }}}}@{{{{ .host }}}}:{{{{ .port }}}}/{annotation.Credentials.DatabaseName}` }}}}"
-                ),
             secretReference =>
             {
                 secretReference.SecretName = "web-database";
@@ -126,75 +132,84 @@ if (isKubernetesDeployment)
         )
         .WithKubernetesIngress(
             "web-ingress",
-            ingress => ingress.WithConfigurationFrom(builder.Configuration)
+            ingress => ingress.WithConfigurationFrom(configuration).AtHost(origin.Host)
         )
         .WithComputeEnvironment(kubernetes)
-        .WithKubernetesExternalSecretProjection(projection => projection
-            .MapParameter("KENER_SECRET_KEY", webSecretKey)
-            .MapParameter("REDIS_PASSWORD", redisPassword)
+        .WithKubernetesEnvironmentVariables(environment =>
+            environment.WithVariable(
+                "REDIS_URL",
+                value =>
+                    value
+                        .AsUri("redis")
+                        .WithRawPasswordEnvironment("REDIS_PASSWORD")
+                        .WithServiceEndpoint(redis)
+            )
         );
 
-    var externalSecretsOptions = ExternalSecretsOptions.FromConfiguration(builder.Configuration);
-    kubernetes.WithExternalSecrets(secrets => secrets
-        .WithSecretStore(externalSecretsOptions.SecretStore)
-        .WithParameterSource(
-            webSecretKey,
-            source => source
-                .UsePasswordGenerator(password => password
-                    .WithLength(64)
-                    .WithDigits(8)
-                    .WithSymbols(8)
-                    .CreatedOnce()
-                )
-        )
-        .WithParameterSource(
-            redisPassword,
-            source => source
-                .UsePasswordGenerator(password => password
-                    .WithLength(32)
-                    .WithDigits(4)
-                    .WithSymbols(4)
-                    .WithSymbolCharacters("-._~")
-                    .CreatedOnce()
-                )
-        )
+    var externalSecretsOptions = ExternalSecretsOptions.FromConfiguration(configuration);
+    kubernetes.WithExternalSecrets(secrets =>
+        secrets
+            .WithSecretStore(externalSecretsOptions.SecretStore)
+            .WithParameterSource(
+                webSecretKey,
+                source =>
+                    source.UsePasswordGenerator(password =>
+                        password.WithLength(64).WithDigits(8).WithSymbols(8).CreatedOnce()
+                    )
+            )
+            .WithParameterSource(
+                redisPassword,
+                source =>
+                    source.UsePasswordGenerator(password =>
+                        password
+                            .WithLength(32)
+                            .WithDigits(4)
+                            .WithSymbols(4)
+                            .WithSymbolCharacters("-._~")
+                            .CreatedOnce()
+                    )
+            )
     );
 }
 else
 {
+    if (builder.Environment.EnvironmentName.StartsWith("Kubernetes", StringComparison.OrdinalIgnoreCase))
+    {
+        throw new InvalidOperationException($"Malformed Kubernetes deployment environment '{builder.Environment.EnvironmentName}'.");
+    }
+
     await builder.Use1PasswordAsync("arkaniscorp.1password.com");
 }
 
 await builder.Build().RunAsync();
 
+static string Require(IConfiguration configuration, string key) =>
+    string.IsNullOrWhiteSpace(configuration[key])
+        ? throw new InvalidOperationException(
+            $"Kubernetes deployment configuration must define {key}."
+        )
+        : configuration[key]!;
+
 static void ConfigureRedis(KubernetesResource resource)
 {
     if (resource.Workload is not StatefulSet statefulSet)
     {
-        throw new InvalidOperationException("The Kener Redis resource must publish as a StatefulSet.");
+        throw new InvalidOperationException(
+            "The Kener Redis resource must publish as a StatefulSet."
+        );
     }
 
     var container = statefulSet.Spec.Template.Spec.Containers.Single();
     statefulSet.Spec.Template.Spec.AutomountServiceAccountToken = false;
-    container.Env.Add(new EnvVarV1 { Name = "REDIS_PASSWORD" });
-    container.Args.Add("--requirepass");
-    container.Args.Add("$(REDIS_PASSWORD)");
-    container.Args.Add("--appendonly");
-    container.Args.Add("yes");
-    container.Args.Add("--appendfsync");
-    container.Args.Add("everysec");
+    container.Args.Clear();
+    container.Args.Add("-c");
+    container.Args.Add(
+        "exec redis-server --requirepass \"$REDIS_PASSWORD\" --appendonly yes --appendfsync everysec"
+    );
     container.Resources = new ResourceRequirementsV1
     {
-        Requests =
-        {
-            ["cpu"] = "100m",
-            ["memory"] = "256Mi",
-        },
-        Limits =
-        {
-            ["cpu"] = "500m",
-            ["memory"] = "512Mi",
-        },
+        Requests = { ["cpu"] = "100m", ["memory"] = "256Mi" },
+        Limits = { ["cpu"] = "500m", ["memory"] = "512Mi" },
     };
     container.LivenessProbe = CreateRedisProbe(10, 3);
     container.ReadinessProbe = CreateRedisProbe(0, 3);
@@ -204,7 +219,9 @@ static void ConfigureWeb(KubernetesResource resource)
 {
     if (resource.Workload is not Deployment deployment)
     {
-        throw new InvalidOperationException("The web application must publish as a Deployment.");
+        throw new InvalidOperationException(
+            "The web application must publish as a Deployment."
+        );
     }
 
     deployment.Spec.Replicas = 2;
@@ -217,27 +234,10 @@ static void ConfigureWeb(KubernetesResource resource)
     deployment.WithPreferredPodAppComponentAntiAffinity("kubernetes.io/hostname", 50);
 
     var container = deployment.Spec.Template.Spec.Containers.Single();
-    container.Env.Add(new EnvVarV1 { Name = "KENER_SECRET_KEY" });
-    container.Env.Add(new EnvVarV1 { Name = "REDIS_PASSWORD" });
-    container.Env.Add(
-        new EnvVarV1
-        {
-            Name = "REDIS_URL",
-            Value = "redis://:$(REDIS_PASSWORD)@redis:6379",
-        }
-    );
     container.Resources = new ResourceRequirementsV1
     {
-        Requests =
-        {
-            ["cpu"] = "1",
-            ["memory"] = "1Gi",
-        },
-        Limits =
-        {
-            ["cpu"] = "2",
-            ["memory"] = "2Gi",
-        },
+        Requests = { ["cpu"] = "1", ["memory"] = "1Gi" },
+        Limits = { ["cpu"] = "2", ["memory"] = "2Gi" },
     };
     SetHealthCheckPath(container.LivenessProbe);
     SetHealthCheckPath(container.ReadinessProbe);
@@ -249,26 +249,17 @@ static void ConfigureWeb(KubernetesResource resource)
         new PodDisruptionBudget
         {
             Metadata = new ObjectMetaV1 { Name = "web-pdb" },
-            Spec = new PodDisruptionBudgetSpec
-            {
-                MinAvailable = 1,
-                Selector = selector,
-            },
+            Spec = new PodDisruptionBudgetSpec { MinAvailable = 1, Selector = selector },
         }
     );
 }
 
-static ProbeV1 CreateRedisProbe(int initialDelaySeconds, int failureThreshold)
-    => new()
+static ProbeV1 CreateRedisProbe(int initialDelaySeconds, int failureThreshold) =>
+    new()
     {
         Exec = new ExecActionV1
         {
-            Command =
-            {
-                "sh",
-                "-c",
-                "redis-cli --no-auth-warning -a \"$REDIS_PASSWORD\" ping",
-            },
+            Command = { "sh", "-c", "redis-cli --no-auth-warning -a \"$REDIS_PASSWORD\" ping" },
         },
         InitialDelaySeconds = initialDelaySeconds,
         PeriodSeconds = 10,
@@ -285,4 +276,110 @@ static void SetHealthCheckPath(ProbeV1? probe)
 
     httpGet.Path = "/healthcheck";
     httpGet.Scheme = "HTTP";
+}
+
+/// <summary>
+/// Selects and validates the settings for a Kubernetes publish target.
+/// </summary>
+internal static class DeploymentConfiguration
+{
+    /// <summary>
+    /// Loads the selected target's settings and rejects inherited deployment settings in test publishes.
+    /// </summary>
+    /// <param name="builder">The AppHost builder whose configuration is updated.</param>
+    /// <exception cref="InvalidOperationException">The target or its configuration is unsupported.</exception>
+    internal static void ConfigureTarget(IDistributedApplicationBuilder builder)
+    {
+        var environmentName = builder.Environment.EnvironmentName;
+        var target = builder.Environment.GetDeploymentEnvironment();
+        if (target?.EnvironmentType is not ("Staging" or "Production" or "PublishTest"))
+        {
+            throw new InvalidOperationException($"Unsupported Kubernetes deployment environment '{environmentName}'.");
+        }
+
+        if (target.EnvironmentType == "PublishTest")
+        {
+            var fixturePath = Environment.GetEnvironmentVariable("KENER_PUBLISH_TEST_FIXTURE");
+            if (string.IsNullOrWhiteSpace(fixturePath) || !Path.IsPathFullyQualified(fixturePath))
+            {
+                throw new InvalidOperationException("Kubernetes-PublishTest requires an absolute KENER_PUBLISH_TEST_FIXTURE path.");
+            }
+
+            var inheritedDeploymentKeys = builder.Configuration
+                .AsEnumerable()
+                .Where(static entry =>
+                    entry.Key.StartsWith("Kubernetes:", StringComparison.OrdinalIgnoreCase)
+                    || entry.Key.StartsWith("Kener:", StringComparison.OrdinalIgnoreCase)
+                    || entry.Key.StartsWith("Parameters:", StringComparison.OrdinalIgnoreCase)
+                )
+                .Select(static entry => entry.Key)
+                .ToArray();
+            if (inheritedDeploymentKeys.Length > 0)
+            {
+                throw new InvalidOperationException(
+                    $"Kubernetes-PublishTest rejects inherited deployment settings: {string.Join(", ", inheritedDeploymentKeys)}."
+                );
+            }
+
+            builder.Configuration.AddJsonFile(fixturePath, optional: false, reloadOnChange: false);
+            ValidateTargetSetting(
+                builder.Configuration,
+                environmentName,
+                "Kubernetes:Namespace",
+                "citizenid-status-publish-test"
+            );
+            ValidateTargetSetting(
+                builder.Configuration,
+                environmentName,
+                "Kener:Origin",
+                "https://status.example.test"
+            );
+        }
+        else
+        {
+            builder.AddDeploymentEnvironmentConfiguration(includeLocalSettings: false);
+            var suffix = target.EnvironmentType.ToLowerInvariant();
+            var expectedNamespace = $"citizenid-status-{suffix}";
+            ValidateTargetSetting(builder.Configuration, environmentName, "Kubernetes:Namespace", expectedNamespace);
+            ValidateTargetSetting(
+                builder.Configuration,
+                environmentName,
+                "Kener:Origin",
+                target.EnvironmentType == "Staging" ? "https://status.citizenid.dev" : "https://status.citizenid.space"
+            );
+            ValidateTargetSetting(
+                builder.Configuration,
+                environmentName,
+                "Kubernetes:CloudNativePostgres:Resources:database:DatabaseName",
+                $"citizenid-{suffix}-status"
+            );
+            ValidateTargetSetting(
+                builder.Configuration,
+                environmentName,
+                "Kubernetes:CloudNativePostgres:Resources:database:Owner",
+                expectedNamespace
+            );
+            ValidateTargetSetting(
+                builder.Configuration,
+                environmentName,
+                "Kubernetes:CloudNativePostgres:Resources:database:CredentialsSecret:SourceSecretName",
+                $"{expectedNamespace}-credentials"
+            );
+        }
+    }
+
+    private static void ValidateTargetSetting(
+        ConfigurationManager configuration,
+        string environmentName,
+        string key,
+        string expectedValue
+    )
+    {
+        if (!string.Equals(configuration[key], expectedValue, StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException(
+                $"{environmentName} requires {key} '{expectedValue}', but configuration supplied '{configuration[key]}'."
+            );
+        }
+    }
 }

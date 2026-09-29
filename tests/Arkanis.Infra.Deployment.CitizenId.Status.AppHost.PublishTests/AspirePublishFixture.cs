@@ -9,44 +9,42 @@ using System.Text.RegularExpressions;
 internal static partial class AspirePublishFixture
 {
     /// <summary>
-    /// Publishes the AppHost for the supplied deployment environment.
+    /// Publishes the AppHost with the synthetic test fixture.
     /// </summary>
-    /// <param name="environment">The AppHost deployment environment.</param>
     /// <param name="cancellationToken">The test cancellation token.</param>
     /// <returns>The generated chart, including non-secret diagnostic output.</returns>
-    public static async Task<PublishedChart> PublishAsync(
-        string environment,
-        CancellationToken cancellationToken
-    )
-        => await ExecuteAsync("publish", null, false, environment, cancellationToken);
+    public static async Task<PublishedChart> PublishAsync(CancellationToken cancellationToken)
+        => await ExecuteAsync("publish", null, cancellationToken);
 
     /// <summary>
-    /// Executes the non-mutating External Secrets emission step for the supplied deployment environment.
+    /// Attempts a test publish with an ambient deployment override to verify the fixture boundary.
     /// </summary>
-    /// <param name="environment">The AppHost deployment environment.</param>
+    /// <param name="cancellationToken">The test cancellation token.</param>
+    /// <returns>The rejected publish attempt and its diagnostic output.</returns>
+    public static async Task<PublishedChart> PublishWithInheritedSettingAsync(CancellationToken cancellationToken)
+        => await ExecuteAsync("publish", null, cancellationToken, injectAmbientSetting: true);
+
+    /// <summary>
+    /// Executes the non-mutating External Secrets emission step with the synthetic test fixture.
+    /// </summary>
     /// <param name="cancellationToken">The test cancellation token.</param>
     /// <returns>The generated chart, including non-secret diagnostic output.</returns>
-    public static async Task<PublishedChart> EmitExternalSecretsAsync(
-        string environment,
-        CancellationToken cancellationToken
-    )
-        => await ExecuteAsync("do", "emit-externalsecrets-kener-kubernetes", true, environment, cancellationToken);
+    public static async Task<PublishedChart> EmitExternalSecretsAsync(CancellationToken cancellationToken)
+        => await ExecuteAsync("do", "emit-externalsecrets-kener-kubernetes", cancellationToken);
 
     /// <summary>
     /// Executes an Aspire operation that renders deployment artifacts without invoking Helm deployment.
     /// </summary>
     /// <param name="command">The Aspire command to execute.</param>
     /// <param name="step">The optional named pipeline step for the command.</param>
-    /// <param name="clearDeploymentState">Whether the pipeline must ignore persisted deployment state.</param>
-    /// <param name="environment">The AppHost deployment environment.</param>
     /// <param name="cancellationToken">The test cancellation token.</param>
+    /// <param name="injectAmbientSetting">Whether to inject a synthetic ambient deployment override.</param>
     /// <returns>The generated chart, including non-secret diagnostic output.</returns>
     private static async Task<PublishedChart> ExecuteAsync(
         string command,
         string? step,
-        bool clearDeploymentState,
-        string environment,
-        CancellationToken cancellationToken
+        CancellationToken cancellationToken,
+        bool injectAmbientSetting = false
     )
     {
         var repositoryRoot = FindRepositoryRoot();
@@ -68,6 +66,17 @@ internal static partial class AspirePublishFixture
             UseShellExecute = false,
             WorkingDirectory = repositoryRoot.FullName,
         };
+        processStartInfo.Environment["KENER_PUBLISH_TEST_FIXTURE"] = Path.Combine(
+            repositoryRoot.FullName,
+            "tests",
+            "Arkanis.Infra.Deployment.CitizenId.Status.AppHost.PublishTests",
+            "Fixtures",
+            "appsettings.Kubernetes.PublishTest.json"
+        );
+        if (injectAmbientSetting)
+        {
+            processStartInfo.Environment["Kubernetes__Namespace"] = "ambient-publish-test";
+        }
 
         processStartInfo.ArgumentList.Add("tool");
         processStartInfo.ArgumentList.Add("run");
@@ -81,15 +90,12 @@ internal static partial class AspirePublishFixture
         processStartInfo.ArgumentList.Add("--apphost");
         processStartInfo.ArgumentList.Add(appHostProject);
         processStartInfo.ArgumentList.Add("--environment");
-        processStartInfo.ArgumentList.Add(environment);
+        processStartInfo.ArgumentList.Add("Kubernetes-PublishTest");
         processStartInfo.ArgumentList.Add("--output-path");
         processStartInfo.ArgumentList.Add(outputDirectory);
         processStartInfo.ArgumentList.Add("--non-interactive");
-        if (clearDeploymentState)
-        {
-            processStartInfo.ArgumentList.Add("--clear-cache");
-            processStartInfo.ArgumentList.Add("true");
-        }
+        processStartInfo.ArgumentList.Add("--clear-cache");
+        processStartInfo.ArgumentList.Add("true");
 
         using var process =
             Process.Start(processStartInfo)
@@ -124,11 +130,13 @@ internal static partial class AspirePublishFixture
             }
         }
 
-        throw new DirectoryNotFoundException("Could not locate the repository root containing Arkanis.Infra.Deployment.CitizenId.Status.slnx.");
+        throw new DirectoryNotFoundException(
+            "Could not locate the repository root containing Arkanis.Infra.Deployment.CitizenId.Status.slnx."
+        );
     }
 
-    private static string Redact(string output)
-        => OnePasswordReference().Replace(output, "op://[redacted]");
+    private static string Redact(string output) =>
+        OnePasswordReference().Replace(output, "op://[redacted]");
 
     [GeneratedRegex("op://[^\\s]+", RegexOptions.CultureInvariant)]
     private static partial Regex OnePasswordReference();
@@ -167,7 +175,9 @@ internal sealed class PublishedChart(string outputDirectory, int exitCode, strin
             .Where(static path => Path.GetExtension(path) is ".yaml" or ".yml")
             .Order(StringComparer.Ordinal)
             .ToArray();
-        var artifacts = await Task.WhenAll(artifactPaths.Select(path => File.ReadAllTextAsync(path, cancellationToken)));
+        var artifacts = await Task.WhenAll(
+            artifactPaths.Select(path => File.ReadAllTextAsync(path, cancellationToken))
+        );
 
         return string.Join(Environment.NewLine, artifacts);
     }
@@ -178,7 +188,10 @@ internal sealed class PublishedChart(string outputDirectory, int exitCode, strin
     /// <param name="relativePath">The artifact path relative to the chart output directory.</param>
     /// <param name="cancellationToken">The cancellation token for file I/O.</param>
     /// <returns>The artifact content, or an empty string when it was not emitted.</returns>
-    public async Task<string> ReadArtifactAsync(string relativePath, CancellationToken cancellationToken)
+    public async Task<string> ReadArtifactAsync(
+        string relativePath,
+        CancellationToken cancellationToken
+    )
     {
         var artifactPath = Path.Combine(outputDirectory, relativePath);
         return File.Exists(artifactPath)
