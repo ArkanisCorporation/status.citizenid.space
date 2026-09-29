@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
     inputs:
       runner:
-        description: "Runner pool (override to ubuntu-latest if self-hosted is broken)"
+        description: "Runner pool"
         type: choice
         options:
           - daedalus
@@ -24,7 +24,7 @@ on:
         description: "Runner pool"
         required: false
         type: string
-        default: daedalus
+        default: ""
     outputs:
       new-version:
         description: "Version semantic-release would publish"
@@ -52,5 +52,5 @@ jobs:
     permissions:
       contents: write
     with:
-      runs-on: ${{ inputs.runner }}
-      runs-on-self-hosted: ${{ inputs.runner != 'ubuntu-latest' }}
+      runs-on: ${{ inputs.runner || vars.RUNNER_DEFAULT || 'daedalus' }}
+      runs-on-self-hosted: ${{ (inputs.runner || vars.RUNNER_DEFAULT || 'daedalus') != 'ubuntu-latest' }}

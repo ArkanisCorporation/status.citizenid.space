@@ -14,7 +14,7 @@ on:
         description: "Runner pool"
         required: false
         type: string
-        default: daedalus
+        default: ""
       test_filter:
         description: "Optional dotnet test filter expression"
         required: false
@@ -42,8 +42,8 @@ jobs:
       # evaluates that input.
       pull-requests: write
     with:
-      runs-on: ${{ inputs.runner }}
-      runs-on-self-hosted: ${{ inputs.runner != 'ubuntu-latest' }}
+      runs-on: &ordinary_runner ${{ inputs.runner || vars.RUNNER_DEFAULT || 'daedalus' }}
+      runs-on-self-hosted: &ordinary_runner_self_hosted ${{ (inputs.runner || vars.RUNNER_DEFAULT || 'daedalus') != 'ubuntu-latest' }}
       global-json-file: global.json
       solution: Arkanis.Infra.Deployment.CitizenId.Status.slnx
       test-filter: ${{ inputs.test_filter }}
@@ -54,7 +54,7 @@ jobs:
 
   complexity:
     name: Complexity
-    runs-on: ${{ inputs.runner }}
+    runs-on: *ordinary_runner
     timeout-minutes: 15
     permissions:
       contents: read
@@ -70,8 +70,8 @@ jobs:
       - name: Setup .NET
         uses: ArkanisCorporation/ci/.github/actions/setup-dotnet@v1
         with:
-          runs-on: ${{ inputs.runner }}
-          runs-on-self-hosted: ${{ inputs.runner != 'ubuntu-latest' }}
+          runs-on: *ordinary_runner
+          runs-on-self-hosted: *ordinary_runner_self_hosted
           global-json-file: global.json
           solution: Arkanis.Infra.Deployment.CitizenId.Status.slnx
 

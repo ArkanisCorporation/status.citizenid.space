@@ -13,19 +13,18 @@ on:
         required: true
         type: string
       runner:
-        description: "Runner pool with Kubernetes cluster access"
-        required: false
+        description: "Runner pool"
         type: choice
         options:
-          - arkanis-runners
           - daedalus
+          - arkanis-runners
           - ubuntu-latest
-        default: arkanis-runners
+        default: daedalus
 
 jobs:
   validate-release-tag:
     name: Validate Immutable Stable Release
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.runner || vars.RUNNER_DEFAULT || 'daedalus' }}
     permissions:
       contents: read
     defaults:
@@ -70,5 +69,4 @@ jobs:
       packages: write
     secrets: inherit
     with:
-      runner: ${{ inputs.runner }}
       target: production

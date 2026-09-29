@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       runner:
-        description: "Runner pool (override to ubuntu-latest if self-hosted is broken)"
+        description: "Runner pool"
         type: choice
         options:
           - daedalus
@@ -30,8 +30,8 @@ jobs:
     permissions:
       contents: read
     with:
-      runs-on: ${{ github.event_name == 'pull_request' && 'ubuntu-latest' || inputs.runner || vars.RUNNER_DEFAULT || 'daedalus' }}
-      runs-on-self-hosted: ${{ (github.event_name == 'pull_request' && 'ubuntu-latest' || inputs.runner || vars.RUNNER_DEFAULT || 'daedalus') != 'ubuntu-latest' }}
+      runs-on: &ordinary_runner ${{ inputs.runner || vars.RUNNER_DEFAULT || 'daedalus' }}
+      runs-on-self-hosted: ${{ (inputs.runner || vars.RUNNER_DEFAULT || 'daedalus') != 'ubuntu-latest' }}
 
   test:
     name: Tests
@@ -40,7 +40,7 @@ jobs:
       contents: read
       pull-requests: write
     with:
-      runner: ${{ github.event_name == 'pull_request' && 'ubuntu-latest' || inputs.runner || vars.RUNNER_DEFAULT || 'daedalus' }}
+      runner: *ordinary_runner
 
   release-dry-run:
     name: "Dry Run: Release"
@@ -49,7 +49,7 @@ jobs:
     permissions:
       contents: write
     with:
-      runner: ${{ github.event_name == 'pull_request' && 'ubuntu-latest' || inputs.runner || vars.RUNNER_DEFAULT || 'daedalus' }}
+      runner: *ordinary_runner
 
   deployment-preflight:
     name: "Dry Run: Kubernetes Deployment"
@@ -64,7 +64,6 @@ jobs:
     permissions:
       contents: read
     with:
-      runner: ${{ inputs.runner || vars.RUNNER_KUBERNETES || 'arkanis-runners' }}
       target: ${{ github.ref == 'refs/heads/main' && 'staging' || 'production' }}
 
   release:
@@ -82,7 +81,7 @@ jobs:
       issues: write
       pull-requests: write
     with:
-      runner: ${{ inputs.runner || vars.RUNNER_DEFAULT || 'daedalus' }}
+      runner: *ordinary_runner
 
   deploy-staging:
     name: Deploy Staging
@@ -100,5 +99,4 @@ jobs:
       packages: write
     secrets: inherit
     with:
-      runner: ${{ inputs.runner || vars.RUNNER_KUBERNETES || 'arkanis-runners' }}
       target: staging

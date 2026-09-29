@@ -6,11 +6,6 @@ permissions: {}
 on:
   workflow_call:
     inputs:
-      runner:
-        description: "Runner pool with Kubernetes tooling"
-        required: false
-        type: string
-        default: arkanis-runners
       target:
         description: "Deployment target: staging or production"
         required: true
@@ -23,8 +18,8 @@ jobs:
     permissions:
       contents: read
     with:
-      runs-on: ${{ inputs.runner }}
-      runs-on-self-hosted: ${{ inputs.runner != 'ubuntu-latest' }}
+      runs-on: &kubernetes_runner arkanis-runners
+      runs-on-self-hosted: &kubernetes_runner_self_hosted true
       aspire-environment: Kubernetes-Staging
       kubernetes-namespace: citizenid-status-staging
       apphost-project: src/Arkanis.Infra.Deployment.CitizenId.Status.AppHost/Arkanis.Infra.Deployment.CitizenId.Status.AppHost.csproj
@@ -35,8 +30,8 @@ jobs:
     permissions:
       contents: read
     with:
-      runs-on: ${{ inputs.runner }}
-      runs-on-self-hosted: ${{ inputs.runner != 'ubuntu-latest' }}
+      runs-on: *kubernetes_runner
+      runs-on-self-hosted: *kubernetes_runner_self_hosted
       aspire-environment: Kubernetes-Production
       kubernetes-namespace: citizenid-status-production
       apphost-project: src/Arkanis.Infra.Deployment.CitizenId.Status.AppHost/Arkanis.Infra.Deployment.CitizenId.Status.AppHost.csproj

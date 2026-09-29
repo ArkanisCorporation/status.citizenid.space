@@ -30,11 +30,14 @@ The workflow rejects branch, prerelease, bare-version, and mismatched-tag reques
 
 ## Runner Trust
 
-Untrusted pull-request code always runs on `ubuntu-latest`.
-Trusted pushes, manual dispatches, and repository dispatches select the manual `runner` input, `RUNNER_DEFAULT`, or `daedalus` in that order.
+Ordinary CI jobs use the manual `runner` input when manually dispatched, then fall back to `${{ vars.RUNNER_DEFAULT || 'daedalus' }}`.
+This includes workflow linting, tests, release verification, release publication, and production release-tag validation.
+Kubernetes verification and deployment jobs remain explicitly pinned to the `arkanis-runners` self-hosted runner.
 
-The supported manual choices are `daedalus`, `arkanis-runners`, and `ubuntu-latest`.
-Every reusable workflow caller keeps `runs-on-self-hosted` consistent with the selected runner.
+The manual `runner` input allows `daedalus`, `arkanis-runners`, or `ubuntu-latest` for ordinary jobs.
+The `RUNNER_DEFAULT` repository variable selects the ordinary runner for other triggers, while the fallback preserves `daedalus` as the default.
+Kubernetes jobs do not consume that variable.
+Every reusable workflow caller derives `runs-on-self-hosted` from the selected ordinary runner or sets it explicitly for Kubernetes.
 
 ## Permissions
 
@@ -46,7 +49,7 @@ The shared `wf-dotnet-test.yml@v1` contract currently declares `pull-requests: w
 The top-level test caller and its local adapter grant that scope solely to satisfy GitHub's nested-workflow validation; no local workflow step writes to a pull request.
 The release verification lane receives `contents: write` only because its shared contract verifies tag-push access during semantic-release dry-run behavior.
 The release lane receives only the semantic-release scopes.
-Deployment jobs receive `packages: write` because the shared deployment contract logs in to GHCR, and receive cluster access only from the selected GitHub Environment's `KUBE_CONFIG` secret or runner context.
+Deployment jobs receive `packages: write` because the shared deployment contract logs in to GHCR, and receive cluster access only from the selected GitHub Environment's `KUBE_CONFIG` secret or the `arkanis-runners` context.
 No job declares `id-token: write`, a registry credential, or a NuGet credential.
 
 ## Delivery Environments
@@ -56,8 +59,8 @@ Create the following GitHub Environments before enabling delivery:
 | Environment | Purpose | Required configuration |
 | --- | --- | --- |
 | `release` | Guards semantic-release publication. | Release policy appropriate to the repository. |
-| `Kubernetes-Staging` | Receives new `main` staging releases. | `KUBE_CONFIG`, or a runner with the staging cluster context. |
-| `Kubernetes-Production` | Receives manual stable-tag promotion. | Required reviewers and `KUBE_CONFIG`, or a runner with the production cluster context. |
+| `k8s-staging` | Receives new `main` staging releases. | `KUBE_CONFIG`, or the `arkanis-runners` staging cluster context. |
+| `k8s-production` | Receives manual stable-tag promotion. | Required reviewers and `KUBE_CONFIG`, or the `arkanis-runners` production cluster context. |
 
 The repository has no local container build, so staging and production use the external Kener image fixed in the AppHost.
 
