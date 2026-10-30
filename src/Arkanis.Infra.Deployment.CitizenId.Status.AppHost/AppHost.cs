@@ -84,7 +84,7 @@ if (builder.Environment.IsKubernetesDeployment())
         .WithComputeEnvironment(kubernetes);
 
     builder
-        .AddContainer("web", "rajnandan1/kener", "v4.1.5-alpine")
+        .AddContainer("web", "rajnandan1/kener", "4.1.10-alpine")
         .WithHttpEndpoint(name: "http", targetPort: 3000)
         .WithExternalHttpEndpoints()
         .WithEnvironment("DATABASE_POOL_MAX", "5")
